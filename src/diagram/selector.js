@@ -84,6 +84,7 @@ function Selector(snap, g) {
 		self.fireOnChanged(self.target);
 		self.setTarget(self.target);
 	}
+	this.clear();
 }
 
 Selector.prototype.on = function(event, cb) {
@@ -209,6 +210,7 @@ function ConnectionSelector(snap, g) {
 		self.fireOnChanged(self.target);
 		self.setTarget(self.target);
 	}
+	this.clear();
 }
 
 ConnectionSelector.prototype.clear = function() {

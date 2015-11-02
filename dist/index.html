@@ -1,9 +1,16 @@
 <script src="clooca-editor-framework.js"></script>
 <script>
-	Cef.init({}, function(elem) {
+	Cef.init({
+		el : 'main'
+	}, function(elem) {
 		var diagramEditor = new Cef.DiagramEditor();
-		//elem.add(diagramEditor);
+		elem.add(diagramEditor);
+		diagramEditor.addNode({bound:{
+			x : 100,
+			y : 100,
+			w : 100,
+			h : 50
+		}});
 	});
-
 </script>
-<svg id="canvas" width="400" height="400"></svg>
+<div id="main"></div>
