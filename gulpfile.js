@@ -1,35 +1,37 @@
-var gulp = require('gulp');
-var connect = require('gulp-connect');
-var mocha = require('gulp-mocha');
-var browserify = require('browserify');
-var source = require('vinyl-source-stream');
-var buffer = require('vinyl-buffer');
-var uglify = require('gulp-uglify');
+/* eslint no-console: 0, arrow-body-style: 0 */
 
-gulp.task('serve', function() {
-  return connect.server({
-    root: 'dist',
-    port : 5220,
-    livereload: true
+const gulp = require('gulp');
+const path = require('path');
+const babel = require('gulp-babel');
+const uglify = require('gulp-uglify');
+const rename = require('gulp-rename');
+const webpack = require("webpack");
+const webpackConfig = require('./webpack.config');
+const clean = require('gulp-clean');
+const sourcemaps = require('gulp-sourcemaps');
+const runSequence = require('run-sequence');
+const packageJSON = require('./package.json');
+
+gulp.task('clean', () => {
+  return gulp.src(['lib', 'dist'], { read: false })
+    .pipe(clean());
+});
+
+gulp.task('babel', () => {
+  return gulp.src('src/**/*.js')
+    .pipe(sourcemaps.init())
+    .pipe(babel())
+    .pipe(sourcemaps.write('.'))
+    .pipe(gulp.dest('lib'));
+});
+
+gulp.task('webpack', (done) => {
+  webpack(webpackConfig, function() {
+    done();
   });
 });
 
-gulp.task('script', function() {
-	browserify({
-		entries: ['./src/clooca.js']
-	})
-	.bundle()
-	.pipe(source('clooca-editor-framework.js'))
-	.pipe(buffer())
-	.pipe(uglify())
-	.pipe(gulp.dest("./dist/"))
+gulp.task('compile', (done) => {
+  runSequence('clean', 'babel', 'webpack', done);
 });
 
-gulp.task('watch',function(){
-  gulp.watch(["src/**/*.js"],["script"]);
-});
-
-gulp.task('default',
-  ['script',
-  'serve',
-  'watch']);

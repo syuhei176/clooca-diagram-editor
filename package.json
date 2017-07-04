@@ -1,28 +1,37 @@
 {
-  "name": "clooca-editor-framework",
+  "name": "diagram-editor",
   "descrption": "editor framework",
   "version": "2.0.0",
   "author": {
     "name": "Shuhei Hiya"
   },
-  "private": true,
+  "main": "./lib/index.js",
   "scripts": {
-    "start": "node app"
+    "start": "node app",
+    "build": "webpack"
   },
   "engines": {
     "node": ">=0.10.*"
   },
   "dependencies": {
-    "eve": "^0.5.0",
+    "snapsvg": "^0.5.1",
     "uuid": "^2.0.1"
   },
   "devDependencies": {
-    "gulp": "*",
-    "gulp-mocha": "*",
-    "gulp-connect": "*",
-    "vinyl-source-stream": "*",
-    "browserify": "*",
-    "gulp-uglify": "*",
-    "vinyl-buffer": "*"
+    "babel-core": "^6.23.1",
+    "babel-loader": "^6.3.2",
+    "babel-plugin-add-module-exports": "^0.2.1",
+    "babel-preset-es2015": "^6.22.0",
+    "babel-preset-es2017": "^6.22.0",
+    "babel-preset-react": "^6.24.1",
+    "gulp": "^3.9.1",
+    "gulp-babel": "^6.1.2",
+    "gulp-clean": "^0.3.2",
+    "gulp-rename": "^1.2.2",
+    "gulp-sourcemaps": "^2.4.1",
+    "gulp-uglify": "^2.0.1",
+    "imports-loader": "^0.7.1",
+    "run-sequence": "^1.2.2",
+    "webpack": "^2.2.1"
   }
 }

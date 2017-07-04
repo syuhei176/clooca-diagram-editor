@@ -1,10 +1,7 @@
-<script src="clooca-editor-framework.js"></script>
+<script src="diagram-editor.js"></script>
 <script>
-	Cef.init({
-		el : 'main'
-	}, function(elem) {
-		var diagramEditor = new Cef.DiagramEditor();
-		elem.add(diagramEditor);
+	window.addEventListener('load', function(e) {
+		var diagramEditor = new CloocaDiagramEditor.DiagramEditor("main");
 		diagramEditor.addNode({bound:{
 			x : 100,
 			y : 100,
