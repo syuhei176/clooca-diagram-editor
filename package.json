@@ -8,7 +8,8 @@
   "main": "./lib/index.js",
   "scripts": {
     "start": "node app",
-    "build": "webpack"
+    "build": "webpack",
+    "watch": "webpack --watch"
   },
   "engines": {
     "node": ">=0.10.*"

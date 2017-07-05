@@ -74,125 +74,810 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 6);
+/******/ 	return __webpack_require__(__webpack_require__.s = 9);
 /******/ })
 /************************************************************************/
 /******/ ([
 /* 0 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module, exports) {
 
-var Node = __webpack_require__(4);
-var Connection = __webpack_require__(3);
-var Selector = __webpack_require__(5);
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-function Diagram(s) {
-	var self = this;
-	this.snap = s;
-	this.base = this.snap.group();
-	var base_rect = this.snap.rect(0, 0, 1200, 800);
-	this.base.append(base_rect);
-	var gui_group = this.snap.group();
-	base_rect.attr({
-		visibility: "hidden",
-		"pointer-events": "fill"
-	});
-	this.selector = new Selector.Selector(s, gui_group);
-	this.connection_selector = new Selector.ConnectionSelector(s, gui_group);
-	base_rect.mousedown(function () {
-		self.selector.clear();
-		self.connection_selector.clear();
-	});
+function EventEmitter() {
+  this._events = this._events || {};
+  this._maxListeners = this._maxListeners || undefined;
+}
+module.exports = EventEmitter;
 
-	this.listeners = {
-		nodeupdate: [],
-		noderemove: [],
-		conupdate: []
-	};
-	this.nodes = {};
-	this.connections = {};
+// Backwards-compat with node 0.10.x
+EventEmitter.EventEmitter = EventEmitter;
 
-	this.selector.on("changed", function (node) {
-		self.fireOnNodeUpdate(node);
-	});
-	this.selector.on("removed", function (node) {
-		self.fireOnNodeRemove(node);
-	});
-	this.connection_selector.on("changed", function (con) {
-		self.fireOnConUpdate(con);
-	});
+EventEmitter.prototype._events = undefined;
+EventEmitter.prototype._maxListeners = undefined;
+
+// By default EventEmitters will print a warning if more than 10 listeners are
+// added to it. This is a useful default which helps finding memory leaks.
+EventEmitter.defaultMaxListeners = 10;
+
+// Obviously not all Emitters should be limited to 10. This function allows
+// that to be increased. Set to zero for unlimited.
+EventEmitter.prototype.setMaxListeners = function(n) {
+  if (!isNumber(n) || n < 0 || isNaN(n))
+    throw TypeError('n must be a positive number');
+  this._maxListeners = n;
+  return this;
+};
+
+EventEmitter.prototype.emit = function(type) {
+  var er, handler, len, args, i, listeners;
+
+  if (!this._events)
+    this._events = {};
+
+  // If there is no 'error' event listener then throw.
+  if (type === 'error') {
+    if (!this._events.error ||
+        (isObject(this._events.error) && !this._events.error.length)) {
+      er = arguments[1];
+      if (er instanceof Error) {
+        throw er; // Unhandled 'error' event
+      } else {
+        // At least give some kind of context to the user
+        var err = new Error('Uncaught, unspecified "error" event. (' + er + ')');
+        err.context = er;
+        throw err;
+      }
+    }
+  }
+
+  handler = this._events[type];
+
+  if (isUndefined(handler))
+    return false;
+
+  if (isFunction(handler)) {
+    switch (arguments.length) {
+      // fast cases
+      case 1:
+        handler.call(this);
+        break;
+      case 2:
+        handler.call(this, arguments[1]);
+        break;
+      case 3:
+        handler.call(this, arguments[1], arguments[2]);
+        break;
+      // slower
+      default:
+        args = Array.prototype.slice.call(arguments, 1);
+        handler.apply(this, args);
+    }
+  } else if (isObject(handler)) {
+    args = Array.prototype.slice.call(arguments, 1);
+    listeners = handler.slice();
+    len = listeners.length;
+    for (i = 0; i < len; i++)
+      listeners[i].apply(this, args);
+  }
+
+  return true;
+};
+
+EventEmitter.prototype.addListener = function(type, listener) {
+  var m;
+
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  if (!this._events)
+    this._events = {};
+
+  // To avoid recursion in the case that type === "newListener"! Before
+  // adding it to the listeners, first emit "newListener".
+  if (this._events.newListener)
+    this.emit('newListener', type,
+              isFunction(listener.listener) ?
+              listener.listener : listener);
+
+  if (!this._events[type])
+    // Optimize the case of one listener. Don't need the extra array object.
+    this._events[type] = listener;
+  else if (isObject(this._events[type]))
+    // If we've already got an array, just append.
+    this._events[type].push(listener);
+  else
+    // Adding the second element, need to change to array.
+    this._events[type] = [this._events[type], listener];
+
+  // Check for listener leak
+  if (isObject(this._events[type]) && !this._events[type].warned) {
+    if (!isUndefined(this._maxListeners)) {
+      m = this._maxListeners;
+    } else {
+      m = EventEmitter.defaultMaxListeners;
+    }
+
+    if (m && m > 0 && this._events[type].length > m) {
+      this._events[type].warned = true;
+      console.error('(node) warning: possible EventEmitter memory ' +
+                    'leak detected. %d listeners added. ' +
+                    'Use emitter.setMaxListeners() to increase limit.',
+                    this._events[type].length);
+      if (typeof console.trace === 'function') {
+        // not supported in IE 10
+        console.trace();
+      }
+    }
+  }
+
+  return this;
+};
+
+EventEmitter.prototype.on = EventEmitter.prototype.addListener;
+
+EventEmitter.prototype.once = function(type, listener) {
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  var fired = false;
+
+  function g() {
+    this.removeListener(type, g);
+
+    if (!fired) {
+      fired = true;
+      listener.apply(this, arguments);
+    }
+  }
+
+  g.listener = listener;
+  this.on(type, g);
+
+  return this;
+};
+
+// emits a 'removeListener' event iff the listener was removed
+EventEmitter.prototype.removeListener = function(type, listener) {
+  var list, position, length, i;
+
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  if (!this._events || !this._events[type])
+    return this;
+
+  list = this._events[type];
+  length = list.length;
+  position = -1;
+
+  if (list === listener ||
+      (isFunction(list.listener) && list.listener === listener)) {
+    delete this._events[type];
+    if (this._events.removeListener)
+      this.emit('removeListener', type, listener);
+
+  } else if (isObject(list)) {
+    for (i = length; i-- > 0;) {
+      if (list[i] === listener ||
+          (list[i].listener && list[i].listener === listener)) {
+        position = i;
+        break;
+      }
+    }
+
+    if (position < 0)
+      return this;
+
+    if (list.length === 1) {
+      list.length = 0;
+      delete this._events[type];
+    } else {
+      list.splice(position, 1);
+    }
+
+    if (this._events.removeListener)
+      this.emit('removeListener', type, listener);
+  }
+
+  return this;
+};
+
+EventEmitter.prototype.removeAllListeners = function(type) {
+  var key, listeners;
+
+  if (!this._events)
+    return this;
+
+  // not listening for removeListener, no need to emit
+  if (!this._events.removeListener) {
+    if (arguments.length === 0)
+      this._events = {};
+    else if (this._events[type])
+      delete this._events[type];
+    return this;
+  }
+
+  // emit removeListener for all listeners on all events
+  if (arguments.length === 0) {
+    for (key in this._events) {
+      if (key === 'removeListener') continue;
+      this.removeAllListeners(key);
+    }
+    this.removeAllListeners('removeListener');
+    this._events = {};
+    return this;
+  }
+
+  listeners = this._events[type];
+
+  if (isFunction(listeners)) {
+    this.removeListener(type, listeners);
+  } else if (listeners) {
+    // LIFO order
+    while (listeners.length)
+      this.removeListener(type, listeners[listeners.length - 1]);
+  }
+  delete this._events[type];
+
+  return this;
+};
+
+EventEmitter.prototype.listeners = function(type) {
+  var ret;
+  if (!this._events || !this._events[type])
+    ret = [];
+  else if (isFunction(this._events[type]))
+    ret = [this._events[type]];
+  else
+    ret = this._events[type].slice();
+  return ret;
+};
+
+EventEmitter.prototype.listenerCount = function(type) {
+  if (this._events) {
+    var evlistener = this._events[type];
+
+    if (isFunction(evlistener))
+      return 1;
+    else if (evlistener)
+      return evlistener.length;
+  }
+  return 0;
+};
+
+EventEmitter.listenerCount = function(emitter, type) {
+  return emitter.listenerCount(type);
+};
+
+function isFunction(arg) {
+  return typeof arg === 'function';
 }
 
-Diagram.prototype.getGroup = function () {
-	return this.base;
-};
+function isNumber(arg) {
+  return typeof arg === 'number';
+}
 
-Diagram.prototype.addNode = function (id, type, bound) {
-	var self = this;
-	var node = new Node(id, this.snap, this, bound, type);
-	node.onclick(function () {
-		self.selector.setTarget(node);
-	});
-	this.nodes[id] = node;
-};
+function isObject(arg) {
+  return typeof arg === 'object' && arg !== null;
+}
 
-Diagram.prototype.remove = function (id) {
-	var self = this;
-	var elem = this.nodes[id];
-	if (elem) {
-		elem.remove();
-	} else {
-		elem = this.connections[id];
-		elem.remove();
-	}
-};
+function isUndefined(arg) {
+  return arg === void 0;
+}
 
-Diagram.prototype.updateNode = function (id, bound) {
-	var self = this;
-	this.nodes[id].setPos(bound.x, bound.y);
-	this.nodes[id].setSize(bound.w, bound.h);
-};
-
-Diagram.prototype.addConnection = function (id, start, end) {
-	var self = this;
-	var con = new Connection(id, this.snap, this, start, end);
-	con.onclick(function () {
-		self.connection_selector.setTarget(con);
-	});
-	this.connections[id] = con;
-};
-
-Diagram.prototype.updateConnection = function (id, start, end) {
-	var self = this;
-	this.connections[id].setStartPos(start.x, start.y);
-	this.connections[id].setEndPos(end.x, end.y);
-};
-
-Diagram.prototype.on = function (event, cb) {
-	this.listeners[event].push(cb);
-};
-
-Diagram.prototype.fireOnNodeRemove = function (e) {
-	this.listeners["noderemove"].forEach(function (l) {
-		l(e);
-	});
-};
-
-Diagram.prototype.fireOnNodeUpdate = function (e) {
-	this.listeners["nodeupdate"].forEach(function (l) {
-		l(e);
-	});
-};
-
-Diagram.prototype.fireOnConUpdate = function (e) {
-	this.listeners["conupdate"].forEach(function (l) {
-		l(e);
-	});
-};
-
-module.exports = Diagram;
 
 /***/ }),
 /* 1 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+class Element {
+
+  constructor(el) {
+    this.el = el;
+  }
+
+  getEl() {
+    return this.el;
+  }
+
+  appendChild(el) {
+    this.el.appendChild(el.getEl());
+  }
+
+  attr(options) {
+    this.setAttr(options);
+  }
+
+  setAttr(options) {
+    //el.setAttributeNS(null, 'transform', 'translate('+0+','+0+')')
+    Object.keys(options).forEach(key => {
+      this.el.setAttributeNS(null, key, options[key]);
+    });
+    return this;
+  }
+
+  transform(translate) {
+    this.el.setAttributeNS(null, 'transform', translate);
+  }
+
+  click(onClick) {
+    this.el.addEventListener('click', e => {
+      onClick(e);
+    });
+  }
+}
+
+class DraggableElement extends Element {
+
+  drag(onDragging, onStart, onEnd) {
+    //dammy dragging elementが必要？
+    window.addEventListener('mousemove', e => {
+      const x = e.clientX;
+      const y = e.clientY;
+      if (this.isDragging) {
+        const transform = this.el.getAttributeNS(null, 'transform');
+        onDragging(x - this.draggingX, y - this.draggingY, x, y, e);
+      }
+    }, false);
+    /*
+    this.el.addEventListener('mouseout', (e) => {
+      if(this.isDragging) {
+        this.isDragging = false
+        onEnd()
+      }
+    })
+    */
+    window.addEventListener('mouseup', e => {
+      if (this.isDragging) {
+        this.isDragging = false;
+        onEnd();
+      }
+    }, false);
+    this.el.addEventListener('mousedown', e => {
+      this.isDragging = true;
+      this.draggingX = e.clientX;
+      this.draggingY = e.clientY;
+      onStart();
+    }, false);
+  }
+
+}
+
+const createElement = function (type, options, style) {
+  const el = window.document.createElementNS('http://www.w3.org/2000/svg', type);
+  //el.setAttributeNS(null, 'transform', 'translate('+0+','+0+')')
+  Object.keys(options).forEach(key => {
+    el.setAttributeNS(null, key, options[key]);
+  });
+  if (style) {
+    el.style = style;
+  }
+  return new Element(el);
+};
+
+const createDraggableElement = function (type, options, style) {
+  const el = window.document.createElementNS('http://www.w3.org/2000/svg', type);
+  //el.setAttributeNS(null, 'transform', 'translate('+0+','+0+')')
+  Object.keys(options).forEach(key => {
+    el.setAttributeNS(null, key, options[key]);
+  });
+  if (style) {
+    el.style = style;
+  }
+  return new DraggableElement(el);
+};
+
+const SVGUtil = {
+  Element,
+  DraggableElement,
+  createElement,
+  createDraggableElement
+};
+
+/* harmony default export */ __webpack_exports__["a"] = (SVGUtil);
+
+/***/ }),
+/* 2 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events__ = __webpack_require__(0);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_events__);
+var Node = __webpack_require__(8);
+var Connection = __webpack_require__(7);
+
+
+class Diagram extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
+
+  constructor(s) {
+    super();
+    this.snap = s;
+    this.base = this.snap.group();
+    var gui_group = this.snap.group();
+
+    this.nodes = {};
+    this.connections = {};
+  }
+
+  getGroup() {
+    return this.base;
+  }
+
+  addNode(id, type, bound) {
+
+    var node = new Node(id, this.snap, this, bound, type);
+    node.onclick(() => {
+      this.emit("nodeClicked", { node: node });
+    });
+    this.nodes[id] = node;
+    return node;
+  }
+
+  remove(id) {
+    var self = this;
+    var elem = this.nodes[id];
+    if (elem) {
+      elem.remove();
+    } else {
+      elem = this.connections[id];
+      elem.remove();
+    }
+  }
+
+  updateNode(id, bound) {
+    var self = this;
+    this.nodes[id].setPos(bound.x, bound.y);
+    this.nodes[id].setSize(bound.w, bound.h);
+  }
+
+  addConnection(id, start, end) {
+
+    var con = new Connection(id, this.snap, this, start, end);
+    con.onclick(() => {
+      this.connection_selector.setTarget(con);
+    });
+    this.connections[id] = con;
+  }
+
+  updateConnection(id, start, end) {
+    var self = this;
+    this.connections[id].setStartPos(start.x, start.y);
+    this.connections[id].setEndPos(end.x, end.y);
+  }
+}
+/* harmony export (immutable) */ __webpack_exports__["a"] = Diagram;
+
+
+/***/ }),
+/* 3 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events__ = __webpack_require__(0);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_events__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__svg_util__ = __webpack_require__(1);
+
+
+
+const CursorRange = 6;
+const CursorOffset = 10;
+
+class Selector extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
+	constructor() {
+		super();
+		this.pos = {
+			x: 0,
+			y: 0
+		};
+		this.target = null;
+		this.listeners = {
+			changed: [],
+			removed: []
+		};
+		const start = () => {};
+		const end = () => {
+			this.emit('change', this.target);
+			this.setTarget(this.target);
+		};
+
+		this.group = __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createElement('g', {});
+		const baseAttrs = {
+			fill: "#3030ff",
+			stroke: "#fff",
+			strokeWidth: 3,
+			r: CursorRange
+		};
+		this.cursor = {
+			n: __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createDraggableElement('circle', Object.assign(baseAttrs, { x: 50, y: 0 })),
+			s: __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createDraggableElement('circle', Object.assign(baseAttrs, { x: 50, y: 100 })),
+			w: __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createDraggableElement('circle', Object.assign(baseAttrs, { x: 0, y: 50 })),
+			e: __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createDraggableElement('circle', Object.assign(baseAttrs, { x: 100, y: 50 })),
+			nw: __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createDraggableElement('circle', Object.assign(baseAttrs, { x: 0, y: 0 })),
+			ne: __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createDraggableElement('circle', Object.assign(baseAttrs, { x: 100, y: 0 })),
+			sw: __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createDraggableElement('circle', Object.assign(baseAttrs, { x: 0, y: 100 })),
+			se: __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createDraggableElement('circle', Object.assign(baseAttrs, { x: 100, y: 100 })),
+			remove: __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createDraggableElement('circle', Object.assign(baseAttrs, { x: 120, y: 50 }))
+		};
+		for (var key in this.cursor) {
+			this.group.appendChild(this.cursor[key]);
+		}
+
+		this.cursor["n"].drag((dx, dy, x, y, e) => {
+			this.target.setPos(this.target_bound.x, this.target_bound.y + dy);
+			this.target.setSize(this.target_bound.w, this.target_bound.h - dy);
+			this.refresh();
+		}, start, end);
+		this.cursor["s"].drag((dx, dy, x, y, e) => {
+			this.target.setSize(this.target_bound.w, this.target_bound.h + dy);
+			this.refresh();
+		}, start, end);
+		this.cursor["w"].drag((dx, dy, x, y, e) => {
+			this.target.setPos(this.target_bound.x + dx, this.target_bound.y);
+			this.target.setSize(this.target_bound.w - dx, this.target_bound.h);
+			this.refresh();
+		}, start, end);
+		this.cursor["e"].drag((dx, dy, x, y, e) => {
+			this.target.setSize(this.target_bound.w + dx, this.target_bound.h);
+			this.refresh();
+		}, start, end);
+		this.cursor["nw"].drag((dx, dy, x, y, e) => {
+			this.target.setPos(this.target_bound.x + dx, this.target_bound.y + dy);
+			this.target.setSize(this.target_bound.w - dx, this.target_bound.h - dy);
+			this.refresh();
+		}, start, end);
+		this.cursor["ne"].drag((dx, dy, x, y, e) => {
+			this.target.setPos(this.target_bound.x, this.target_bound.y + dy);
+			this.target.setSize(this.target_bound.w + dx, this.target_bound.h - dy);
+			this.refresh();
+		}, start, end);
+		this.cursor["sw"].drag((dx, dy, x, y, e) => {
+			this.target.setPos(this.target_bound.x + dx, this.target_bound.y);
+			this.target.setSize(this.target_bound.w - dx, this.target_bound.h + dy);
+			this.refresh();
+		}, start, end);
+		this.cursor["se"].drag((dx, dy, x, y, e) => {
+			this.target.setSize(this.target_bound.w + dx, this.target_bound.h + dy);
+			this.refresh();
+		}, start, end);
+		this.cursor["remove"].click(() => {
+			this.fireOnRemoved(this.target);
+			this.clear();
+		}, start, end);
+
+		this.clear();
+	}
+
+	clear() {
+		this.target = null;
+		this.group.attr({
+			visibility: "hidden"
+		});
+	}
+
+	setTarget(node) {
+		console.log('setTarget', node);
+
+		this.group.attr({
+			visibility: "visible"
+		});
+		if (this.target) this.target.off("onmove");
+		this.target = node;
+		this.target_bound = {
+			x: this.target.getBound().x,
+			y: this.target.getBound().y,
+			w: this.target.getBound().w,
+			h: this.target.getBound().h
+		};
+		this.pos.x = node.getX();
+		this.pos.y = node.getY();
+		this.refresh();
+		this.target.onmove(() => {
+			this.refresh();
+		});
+	}
+
+	getEl() {
+		return this.group.getEl();
+	}
+
+	refresh() {
+
+		if (!this.target) return;
+		this.group.transform("translate(" + this.target.getBound().x + "," + this.target.getBound().y + ")");
+		this.cursor.n.attr({
+			cx: this.target.getBound().w / 2,
+			cy: -CursorOffset
+		});
+		this.cursor.s.attr({
+			cx: this.target.getBound().w / 2,
+			cy: this.target.getBound().h + CursorOffset
+		});
+		this.cursor.w.attr({
+			cx: -CursorOffset,
+			cy: this.target.getBound().h / 2
+		});
+		this.cursor.e.attr({
+			cx: this.target.getBound().w + CursorOffset,
+			cy: this.target.getBound().h / 2
+		});
+		this.cursor.nw.attr({
+			cx: -CursorOffset,
+			cy: -CursorOffset
+		});
+		this.cursor.ne.attr({
+			cx: this.target.getBound().w + CursorOffset,
+			cy: -CursorOffset
+		});
+		this.cursor.sw.attr({
+			cx: -CursorOffset,
+			cy: this.target.getBound().h + CursorOffset
+		});
+		this.cursor.se.attr({
+			cx: this.target.getBound().w + CursorOffset,
+			cy: this.target.getBound().h + CursorOffset
+		});
+	}
+
+}
+/* harmony export (immutable) */ __webpack_exports__["a"] = Selector;
+
+
+class ConnectionSelector extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
+	constructor() {
+		super();
+		this.pos = {
+			x: 0,
+			y: 0
+		};
+		this.target = null;
+		this.listeners = {
+			changed: []
+		};
+		function onstart() {}
+		const onend = () => {
+			this.fireOnChanged(this.target);
+			this.setTarget(this.target);
+		};
+
+		this.group = __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createElement('g', {});
+		const baseAttrs = {
+			fill: "#3030ff",
+			stroke: "#fff",
+			strokeWidth: 3
+		};
+		this.cursor = {
+			start: __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createDraggableElement('circle', Object.assign(baseAttrs, { x: 50, y: 0, r: CursorRange })),
+			end: __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createDraggableElement('circle', Object.assign(baseAttrs, { x: 50, y: 100, r: CursorRange }))
+		};
+		for (var key in this.cursor) {
+			this.group.appendChild(this.cursor[key]);
+		}
+
+		this.cursor["start"].drag((dx, dy, x, y, e) => {
+			this.target.setStartPos(this.target_start.x + dx, this.target_start.y + dy);
+			this.refresh();
+		}, onstart, onend);
+		this.cursor["end"].drag((dx, dy, x, y, e) => {
+			this.target.setEndPos(this.target_end.x + dx, this.target_end.y + dy);
+			this.refresh();
+		}, onstart, onend);
+		this.clear();
+	}
+
+	clear() {
+
+		this.target = null;
+		this.group.attr({
+			visibility: "hidden"
+		});
+	}
+
+	setTarget(connection) {
+
+		this.group.attr({
+			visibility: "visible"
+		});
+		if (this.target) this.target.off("onmove");
+		this.target = connection;
+		this.target_start = {
+			x: this.target.getStartPos().x,
+			y: this.target.getStartPos().y
+		};
+		this.target_end = {
+			x: this.target.getEndPos().x,
+			y: this.target.getEndPos().y
+		};
+		this.refresh();
+		this.target.onmove(function () {
+			this.refresh();
+		});
+	}
+
+	refresh() {
+
+		if (!this.target) return;
+		this.cursor.start.attr({
+			cx: this.target.getStartPos().x,
+			cy: this.target.getStartPos().y
+		});
+		this.cursor.end.attr({
+			cx: this.target.getEndPos().x,
+			cy: this.target.getEndPos().y
+		});
+	}
+
+}
+/* harmony export (immutable) */ __webpack_exports__["b"] = ConnectionSelector;
+
+
+/***/ }),
+/* 4 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__svg_util__ = __webpack_require__(1);
+
+
+class ToolPalletUI {
+  constructor() {
+    this.el = __WEBPACK_IMPORTED_MODULE_0__svg_util__["a" /* default */].createElement('g', {
+      transform: 'translate(' + 0 + ',' + 0 + ')'
+
+    });
+    const rect = __WEBPACK_IMPORTED_MODULE_0__svg_util__["a" /* default */].createElement('rect', {
+      x: 0,
+      y: 0,
+      width: 240,
+      height: 80,
+      stroke: '#000',
+      fill: '#fff'
+    }, {
+      'stroke-width': 1
+    });
+    this.el.appendChild(rect);
+  }
+
+  addItem() {
+    const rect = __WEBPACK_IMPORTED_MODULE_0__svg_util__["a" /* default */].createElement('rect', {
+      x: 0,
+      y: 20,
+      width: 40,
+      height: 40,
+      stroke: '#000',
+      fill: '#fff'
+    });
+    this.el.appendChild(rect);
+  }
+
+  getEl() {
+    return this.el.getEl();
+  }
+}
+/* harmony export (immutable) */ __webpack_exports__["a"] = ToolPalletUI;
+
+
+/***/ }),
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_LOCAL_MODULE_0__;var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*** IMPORTS FROM imports-loader ***/
@@ -8833,7 +9518,7 @@ return Snap;
 }.call(window));
 
 /***/ }),
-/* 2 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //     uuid.js
@@ -8844,7 +9529,7 @@ return Snap;
 // Unique ID creation requires a high quality random # generator.  We feature
 // detect to determine the best RNG source, normalizing to a function that
 // returns 128-bits of randomness, since that's what's usually required
-var _rng = __webpack_require__(7);
+var _rng = __webpack_require__(10);
 
 // Maps for number <-> hex string conversion
 var _byteToHex = [];
@@ -9022,7 +9707,7 @@ module.exports = uuid;
 
 
 /***/ }),
-/* 3 */
+/* 7 */
 /***/ (function(module, exports) {
 
 function Connection(id, s, diagram, start, end) {
@@ -9116,7 +9801,7 @@ Connection.prototype.refresh = function () {
 module.exports = Connection;
 
 /***/ }),
-/* 4 */
+/* 8 */
 /***/ (function(module, exports) {
 
 
@@ -9150,7 +9835,7 @@ function Node(id, s, diagram, bound, type) {
 		self.start_pos.x = self.bound.x;
 		self.start_pos.y = self.bound.y;
 	}, function (e) {
-		diagram.fireOnNodeUpdate(self);
+		diagram.emit('nodeupdate', self);
 	});
 	this.elem.click(function () {
 		self.listeners.onclick();
@@ -9240,311 +9925,129 @@ Node.prototype.refresh = function () {
 module.exports = Node;
 
 /***/ }),
-/* 5 */
-/***/ (function(module, exports) {
-
-Selector.CursorRange = 6;
-Selector.CursorOffset = 10;
-
-function Selector(snap, g) {
-	var self = this;
-	this.pos = {
-		x: 0,
-		y: 0
-	};
-	this.target = null;
-	this.listeners = {
-		changed: [],
-		removed: []
-	};
-	this.group = snap.group();
-	g.append(this.group);
-	this.cursor = {
-		n: snap.circle(50, 0, Selector.CursorRange),
-		s: snap.circle(50, 100, Selector.CursorRange),
-		w: snap.circle(0, 50, Selector.CursorRange),
-		e: snap.circle(100, 50, Selector.CursorRange),
-		nw: snap.circle(0, 0, Selector.CursorRange),
-		ne: snap.circle(100, 0, Selector.CursorRange),
-		sw: snap.circle(0, 100, Selector.CursorRange),
-		se: snap.circle(100, 100, Selector.CursorRange),
-		remove: snap.circle(120, 50, Selector.CursorRange)
-	};
-	for (var key in this.cursor) {
-		this.cursor[key].attr({
-			fill: "#3030ff",
-			stroke: "#fff",
-			strokeWidth: 3
-		});
-		this.group.append(this.cursor[key]);
-	}
-
-	this.cursor["n"].drag(function (dx, dy, x, y, e) {
-		self.target.setPos(self.target_bound.x, self.target_bound.y + dy);
-		self.target.setSize(self.target_bound.w, self.target_bound.h - dy);
-		self.refresh();
-	}, start, end);
-	this.cursor["s"].drag(function (dx, dy, x, y, e) {
-		self.target.setSize(self.target_bound.w, self.target_bound.h + dy);
-		self.refresh();
-	}, start, end);
-	this.cursor["w"].drag(function (dx, dy, x, y, e) {
-		self.target.setPos(self.target_bound.x + dx, self.target_bound.y);
-		self.target.setSize(self.target_bound.w - dx, self.target_bound.h);
-		self.refresh();
-	}, start, end);
-	this.cursor["e"].drag(function (dx, dy, x, y, e) {
-		self.target.setSize(self.target_bound.w + dx, self.target_bound.h);
-		self.refresh();
-	}, start, end);
-	this.cursor["nw"].drag(function (dx, dy, x, y, e) {
-		self.target.setPos(self.target_bound.x + dx, self.target_bound.y + dy);
-		self.target.setSize(self.target_bound.w - dx, self.target_bound.h - dy);
-		self.refresh();
-	}, start, end);
-	this.cursor["ne"].drag(function (dx, dy, x, y, e) {
-		self.target.setPos(self.target_bound.x, self.target_bound.y + dy);
-		self.target.setSize(self.target_bound.w + dx, self.target_bound.h - dy);
-		self.refresh();
-	}, start, end);
-	this.cursor["sw"].drag(function (dx, dy, x, y, e) {
-		self.target.setPos(self.target_bound.x + dx, self.target_bound.y);
-		self.target.setSize(self.target_bound.w - dx, self.target_bound.h + dy);
-		self.refresh();
-	}, start, end);
-	this.cursor["se"].drag(function (dx, dy, x, y, e) {
-		self.target.setSize(self.target_bound.w + dx, self.target_bound.h + dy);
-		self.refresh();
-	}, start, end);
-	this.cursor["remove"].click(function () {
-		self.fireOnRemoved(self.target);
-		self.clear();
-	}, start, end);
-
-	function start() {}
-	function end() {
-		self.fireOnChanged(self.target);
-		self.setTarget(self.target);
-	}
-	this.clear();
-}
-
-Selector.prototype.on = function (event, cb) {
-	this.listeners[event].push(cb);
-};
-
-Selector.prototype.fireOnChanged = function (e) {
-	this.listeners["changed"].forEach(function (l) {
-		l(e);
-	});
-};
-
-Selector.prototype.fireOnRemoved = function (e) {
-	this.listeners["removed"].forEach(function (l) {
-		l(e);
-	});
-};
-
-Selector.prototype.clear = function () {
-	this.target = null;
-	this.group.attr({
-		visibility: "hidden"
-	});
-};
-
-Selector.prototype.setTarget = function (node) {
-	var self = this;
-	this.group.attr({
-		visibility: "visible"
-	});
-	if (this.target) this.target.off("onmove");
-	this.target = node;
-	self.target_bound = {
-		x: this.target.getBound().x,
-		y: this.target.getBound().y,
-		w: this.target.getBound().w,
-		h: this.target.getBound().h
-	};
-	this.pos.x = node.getX();
-	this.pos.y = node.getY();
-	this.refresh();
-	this.target.onmove(function () {
-		self.refresh();
-	});
-};
-
-Selector.prototype.refresh = function () {
-	if (!this.target) return;
-	this.group.transform("translate(" + this.target.getBound().x + "," + this.target.getBound().y + ")");
-	this.cursor.n.attr({
-		cx: this.target.getBound().w / 2,
-		cy: -Selector.CursorOffset
-	});
-	this.cursor.s.attr({
-		cx: this.target.getBound().w / 2,
-		cy: this.target.getBound().h + Selector.CursorOffset
-	});
-	this.cursor.w.attr({
-		cx: -Selector.CursorOffset,
-		cy: this.target.getBound().h / 2
-	});
-	this.cursor.e.attr({
-		cx: this.target.getBound().w + Selector.CursorOffset,
-		cy: this.target.getBound().h / 2
-	});
-	this.cursor.nw.attr({
-		cx: -Selector.CursorOffset,
-		cy: -Selector.CursorOffset
-	});
-	this.cursor.ne.attr({
-		cx: this.target.getBound().w + Selector.CursorOffset,
-		cy: -Selector.CursorOffset
-	});
-	this.cursor.sw.attr({
-		cx: -Selector.CursorOffset,
-		cy: this.target.getBound().h + Selector.CursorOffset
-	});
-	this.cursor.se.attr({
-		cx: this.target.getBound().w + Selector.CursorOffset,
-		cy: this.target.getBound().h + Selector.CursorOffset
-	});
-};
-
-function ConnectionSelector(snap, g) {
-	var self = this;
-	this.pos = {
-		x: 0,
-		y: 0
-	};
-	this.target = null;
-	this.listeners = {
-		changed: []
-	};
-	this.group = snap.group();
-	g.append(this.group);
-	this.cursor = {
-		start: snap.circle(50, 0, Selector.CursorRange),
-		end: snap.circle(50, 100, Selector.CursorRange)
-	};
-	for (var key in this.cursor) {
-		this.cursor[key].attr({
-			fill: "#3030ff",
-			stroke: "#fff",
-			strokeWidth: 3
-		});
-		this.group.append(this.cursor[key]);
-	}
-
-	this.cursor["start"].drag(function (dx, dy, x, y, e) {
-		self.target.setStartPos(self.target_start.x + dx, self.target_start.y + dy);
-		self.refresh();
-	}, onstart, onend);
-	this.cursor["end"].drag(function (dx, dy, x, y, e) {
-		self.target.setEndPos(self.target_end.x + dx, self.target_end.y + dy);
-		self.refresh();
-	}, onstart, onend);
-
-	function onstart() {}
-	function onend() {
-		self.fireOnChanged(self.target);
-		self.setTarget(self.target);
-	}
-	this.clear();
-}
-
-ConnectionSelector.prototype.clear = function () {
-	this.target = null;
-	this.group.attr({
-		visibility: "hidden"
-	});
-};
-
-ConnectionSelector.prototype.setTarget = function (connection) {
-	var self = this;
-	this.group.attr({
-		visibility: "visible"
-	});
-	if (this.target) this.target.off("onmove");
-	this.target = connection;
-	self.target_start = {
-		x: this.target.getStartPos().x,
-		y: this.target.getStartPos().y
-	};
-	self.target_end = {
-		x: this.target.getEndPos().x,
-		y: this.target.getEndPos().y
-	};
-	this.refresh();
-	this.target.onmove(function () {
-		self.refresh();
-	});
-};
-
-ConnectionSelector.prototype.on = function (event, cb) {
-	this.listeners[event].push(cb);
-};
-
-ConnectionSelector.prototype.fireOnChanged = function (e) {
-	this.listeners["changed"].forEach(function (l) {
-		l(e);
-	});
-};
-ConnectionSelector.prototype.refresh = function () {
-	if (!this.target) return;
-	this.cursor.start.attr({
-		cx: this.target.getStartPos().x,
-		cy: this.target.getStartPos().y
-	});
-	this.cursor.end.attr({
-		cx: this.target.getEndPos().x,
-		cy: this.target.getEndPos().y
-	});
-};
-
-module.exports.Selector = Selector;
-module.exports.ConnectionSelector = ConnectionSelector;
-
-/***/ }),
-/* 6 */
+/* 9 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "DiagramEditor", function() { return DiagramEditor; });
-const Snap = __webpack_require__(1);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__diagram_diagram__ = __webpack_require__(2);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_uuid__ = __webpack_require__(6);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_uuid___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1_uuid__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_events__ = __webpack_require__(0);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_events___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_2_events__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__ui_toolpallet__ = __webpack_require__(4);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__ui_selector__ = __webpack_require__(3);
+const Snap = __webpack_require__(5);
 
-var Diagram = __webpack_require__(0);
-var uuid = __webpack_require__(2);
 
-class DiagramEditor {
-	constructor(el) {
-		const wrapper = window.document.getElementById(el);
-		this.el = window.document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-		let browserSize = {
-			width: window.innerWidth || document.body.clientWidth,
-			height: window.innerHeight || document.body.clientHeight
-		};
-		this.el.style.width = browserSize.width + 'px';
-		this.el.style.height = browserSize.height + 'px';
-		//this.el.setAttributeNS('http://www.w3.org/2000/svg', 'width', 500)
-		//this.el.setAttributeNS('http://www.w3.org/2000/svg', 'height', 500)
-		wrapper.appendChild(this.el);
-		var s = Snap(this.el);
-		this.diagram = new Diagram(s);
-	}
 
-	addNode(_options) {
-		var options = _options || {};
-		var id = options.id || uuid();
-		var bound = options.bound || { x: 0, y: 0, w: 100, h: 40 };
-		this.diagram.addNode(id, 'rectangle', bound);
-	}
+
+
+
+
+class DiagramEditor extends __WEBPACK_IMPORTED_MODULE_2_events__["EventEmitter"] {
+  constructor(el) {
+    super();
+    this.wrapper = window.document.getElementById(el);
+    this.el = window.document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    this.browserSize = {
+      width: window.innerWidth || document.body.clientWidth,
+      height: window.innerHeight || document.body.clientHeight
+    };
+    this.el.style.width = this.browserSize.width + 'px';
+    this.el.style.height = this.browserSize.height + 'px';
+    //this.el.setAttributeNS('http://www.w3.org/2000/svg', 'width', 500)
+    //this.el.setAttributeNS('http://www.w3.org/2000/svg', 'height', 500)
+    this.wrapper.appendChild(this.el);
+
+    this.selector = new __WEBPACK_IMPORTED_MODULE_4__ui_selector__["a" /* Selector */]();
+    this.connection_selector = new __WEBPACK_IMPORTED_MODULE_4__ui_selector__["b" /* ConnectionSelector */]();
+    this.addGUILayer();
+
+    var s = Snap(this.el);
+    this.diagram = new __WEBPACK_IMPORTED_MODULE_0__diagram_diagram__["a" /* default */](s);
+
+    this.diagram.on('nodeClicked', e => {
+
+      this.selector.setTarget(e.node);
+    });
+  }
+
+  addGUILayer() {
+    const layer = window.document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    const layerClicker = window.document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    layer.setAttributeNS(null, 'transform', 'translate(' + 0 + ',' + 0 + ')');
+    layerClicker.setAttributeNS(null, 'x', 0);
+    layerClicker.setAttributeNS(null, 'y', 0);
+    layerClicker.setAttributeNS(null, 'width', this.browserSize.width);
+    layerClicker.setAttributeNS(null, 'height', this.browserSize.height);
+    layerClicker.setAttributeNS(null, 'stroke', '#000');
+    layerClicker.setAttributeNS(null, 'fill', '#fff');
+    layerClicker.setAttributeNS(null, 'visibility', 'hidden');
+    layerClicker.setAttributeNS(null, 'pointer-events', 'fill');
+    /*
+    base_rect.attr({
+      visibility : "hidden",
+      "pointer-events" : "fill"
+    });
+    */
+
+    layer.appendChild(layerClicker);
+    layer.appendChild(this.selector.getEl());
+    layerClicker.addEventListener('click', e => {
+      console.log(e);
+      this.emit('click', {
+        x: e.clientX,
+        y: e.clientY
+      });
+      this.selector.clear();
+      this.connection_selector.clear();
+    }, false);
+    this.el.appendChild(layer);
+
+    this.selector.on("changed", node => {
+      this.emit('nodeupdate', node);
+    });
+    this.selector.on("removed", function (node) {
+      this.emit('noderemove', node);
+    });
+    this.connection_selector.on("changed", function (con) {
+      this.emit('conupdate', con);
+    });
+    this.on('click', e => {
+      this.addNode({
+        bound: {
+          x: e.x,
+          y: e.y,
+          w: 100,
+          h: 100
+        }
+      });
+    });
+  }
+
+  addNode(_options) {
+    var options = _options || {};
+    var id = options.id || __WEBPACK_IMPORTED_MODULE_1_uuid___default()();
+    var bound = options.bound || { x: 0, y: 0, w: 100, h: 40 };
+    var node = this.diagram.addNode(id, 'rectangle', bound);
+    this.emit('addNode', { node: node });
+    return node;
+  }
+
+  createToolPallet(toolpallet) {
+    this.toolpallet = new __WEBPACK_IMPORTED_MODULE_3__ui_toolpallet__["a" /* default */]();
+    this.el.appendChild(this.toolpallet.getEl());
+    //this.toolpallet.onSelect()
+    return this.toolpallet;
+  }
 }
 
 
 
 /***/ }),
-/* 7 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global) {
@@ -9580,10 +10083,10 @@ if (!rng) {
 module.exports = rng;
 
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(11)))
 
 /***/ }),
-/* 8 */
+/* 11 */
 /***/ (function(module, exports) {
 
 var g;

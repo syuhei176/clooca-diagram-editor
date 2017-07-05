@@ -32,7 +32,7 @@ function Node(id, s, diagram, bound, type) {
 		self.start_pos.x = self.bound.x;
 		self.start_pos.y = self.bound.y;
 	}, function(e) {
-		diagram.fireOnNodeUpdate(self);
+		diagram.emit('nodeupdate', self);
 	});
 	this.elem.click(function() {
 		self.listeners.onclick();
