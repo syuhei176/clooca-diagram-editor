@@ -855,9 +855,12 @@ class ToolPalletUI {
       'stroke-width': 1
     });
     this.el.appendChild(rect);
+    this.length = 0;
+    this.items = [];
   }
 
-  addItem() {
+  addItem(name) {
+    const group = __WEBPACK_IMPORTED_MODULE_0__svg_util__["a" /* default */].createElement('g', {});
     const rect = __WEBPACK_IMPORTED_MODULE_0__svg_util__["a" /* default */].createElement('rect', {
       x: 0,
       y: 20,
@@ -866,7 +869,38 @@ class ToolPalletUI {
       stroke: '#000',
       fill: '#fff'
     });
-    this.el.appendChild(rect);
+    const text = __WEBPACK_IMPORTED_MODULE_0__svg_util__["a" /* default */].createElement('text', {
+      x: 0,
+      y: 40,
+      text: name
+    });
+    text.el.textContent = name;
+    group.transform('translate(' + this.items.length * 42 + ',0)');
+    group.appendChild(rect);
+    group.appendChild(text);
+    this.el.appendChild(group);
+    rect.click(() => {
+      this.selectedToolName = name;
+      this._select(rect);
+    });
+    this.selectedToolName = name;
+    this.items.push(rect);
+    this._select(rect);
+  }
+
+  _select(target) {
+    this.items.forEach(item => {
+      item.attr({
+        stroke: '#000'
+      });
+    });
+    target.attr({
+      stroke: '#0ff'
+    });
+  }
+
+  getSelectedToolName() {
+    return this.selectedToolName;
   }
 
   getEl() {
@@ -10016,14 +10050,17 @@ class DiagramEditor extends __WEBPACK_IMPORTED_MODULE_2_events__["EventEmitter"]
       this.emit('conupdate', con);
     });
     this.on('click', e => {
-      this.addNode({
-        bound: {
-          x: e.x,
-          y: e.y,
-          w: 100,
-          h: 100
-        }
-      });
+      let toolName = this.toolpallet.getSelectedToolName();
+      if (toolName == "select") {} else {
+        this.addNode({
+          bound: {
+            x: e.x,
+            y: e.y,
+            w: 100,
+            h: 100
+          }
+        });
+      }
     });
   }
 

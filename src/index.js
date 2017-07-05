@@ -81,14 +81,19 @@ class DiagramEditor extends EventEmitter {
       this.emit('conupdate', con)
     });
     this.on('click', (e) => {
-      this.addNode({
-        bound: {
-          x: e.x,
-          y: e.y,
-          w: 100,
-          h: 100
-        }
-      });
+      let toolName = this.toolpallet.getSelectedToolName()
+      if(toolName == "select") {
+
+      }else{
+        this.addNode({
+          bound: {
+            x: e.x,
+            y: e.y,
+            w: 100,
+            h: 100
+          }
+        });
+      }
     })
 
 
