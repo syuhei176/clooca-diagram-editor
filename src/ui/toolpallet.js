@@ -1,4 +1,5 @@
 import SVGUtil from './svg-util'
+import Style from './icon.css'
 
 export default class ToolPalletUI {
   constructor() {
@@ -21,44 +22,47 @@ export default class ToolPalletUI {
     this.items = []
   }
 
-  addItem(name) {
+  addItem(name, className) {
     const group = SVGUtil.createElement('g', {})
-    const rect = SVGUtil.createElement('rect', {
+    const rect = SVGUtil.createElement('foreignObject', {
       x: 0,
       y: 20,
-      width: 40,
-      height: 40,
-      stroke: '#000',
-      fill: '#fff'
+      width: 60,
+      height: 60
+      //stroke: '#000',
+      //fill: `url(${selectIcon})`
+      //opacity: 0,
+      //"background-image": `url(${selectIcon})`
     })
+    const div = document.createElement('div')
+    rect.el.appendChild(div)
+    div.classList.add(Style[className || 'selectIcon'])
+    /*
     const text = SVGUtil.createElement('text', {
       x: 0,
       y: 40,
       text: name
     })
     text.el.textContent = name
+    */
     group.transform('translate('+(this.items.length*42)+',0)')
     group.appendChild(rect)
-    group.appendChild(text)
+    //group.appendChild(text)
     this.el.appendChild(group)
     rect.click(() => {
       this.selectedToolName = name
-      this._select(rect)
+      this._select(div)
     })
     this.selectedToolName = name
-    this.items.push(rect)
-    this._select(rect)
+    this.items.push(div)
+    this._select(div)
   }
 
   _select(target) {
     this.items.forEach((item) => {
-      item.attr({
-        stroke: '#000'
-      })
+      item.style['border'] = 'solid 1px #333'
     })
-    target.attr({
-      stroke: '#0ff'
-    })
+    target.style['border'] = 'solid 2px #55e'
   }
 
   getSelectedToolName() {
@@ -69,3 +73,4 @@ export default class ToolPalletUI {
     return this.el.getEl()
   }
 }
+

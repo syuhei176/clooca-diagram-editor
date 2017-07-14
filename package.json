@@ -25,6 +25,7 @@
     "babel-preset-es2015": "^6.22.0",
     "babel-preset-es2017": "^6.22.0",
     "babel-preset-react": "^6.24.1",
+    "css-loader": "^0.28.4",
     "gulp": "^3.9.1",
     "gulp-babel": "^6.1.2",
     "gulp-clean": "^0.3.2",
@@ -33,6 +34,8 @@
     "gulp-uglify": "^2.0.1",
     "imports-loader": "^0.7.1",
     "run-sequence": "^1.2.2",
+    "style-loader": "^0.18.2",
+    "svg-url-loader": "github:syuhei176/svg-url-loader",
     "webpack": "^2.2.1"
   }
 }

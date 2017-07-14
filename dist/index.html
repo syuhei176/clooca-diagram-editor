@@ -3,8 +3,8 @@
   window.addEventListener('load', function(e) {
     var diagramEditor = new CloocaDiagramEditor.DiagramEditor("main");
     var toolpallet = diagramEditor.createToolPallet();
-    toolpallet.addItem('select')
-    toolpallet.addItem('rect')
+    toolpallet.addItem('select', 'selectIcon')
+    toolpallet.addItem('rect', 'rectIcon')
     diagramEditor.on('addNode', function() {
 
     })

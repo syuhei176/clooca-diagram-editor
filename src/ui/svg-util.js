@@ -25,6 +25,14 @@ class Element {
 
   }
 
+  setStyle(options) {
+    this.el.style = options
+  }
+
+  className(className) {
+    this.el.setAttributeNS(null, 'class', className)
+  }
+
   transform(translate) {
     this.el.setAttributeNS(null, 'transform', translate)
   }
