@@ -27,8 +27,7 @@ class DiagramEditor extends EventEmitter {
     this.connection_selector = new ConnectionSelector();
     this.addGUILayer()
 
-    var s = Snap(this.el);
-    this.diagram = new Diagram(s);
+    this.diagram = new Diagram(this.el);
 
     this.diagram.on('nodeClicked', (e) => {
 
@@ -106,6 +105,12 @@ class DiagramEditor extends EventEmitter {
     var node = this.diagram.addNode(id, 'rectangle', bound);
     this.emit('addNode', {node:node})
     return node;
+  }
+
+  addConnection(src, target, _options) {
+    var options = _options || {};
+    var id = options.id || uuid();
+    this.diagram.addConnection(id, src, target)
   }
 
   createToolPallet(toolpallet) {

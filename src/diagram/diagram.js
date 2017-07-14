@@ -1,18 +1,16 @@
-var Node = require('./node');
-var Connection = require('./edge');
+import Node from './node'
+import Connection from './edge'
+import SVGUtil from '../ui/svg-util'
 import {EventEmitter} from 'events'
 
 export default class Diagram extends EventEmitter {
 
-  constructor(s) {
+  constructor(rootElement) {
     super()
-    this.snap = s;
-    this.base = this.snap.group();
-    var gui_group = this.snap.group();
-
+    this.base = SVGUtil.createElement('g', {})
+    rootElement.appendChild(this.base.getEl())
     this.nodes = {};
     this.connections = {};
-
   }
 
   getGroup() {
@@ -21,8 +19,8 @@ export default class Diagram extends EventEmitter {
 
   addNode(id, type, bound) {
 
-    var node = new Node(id, this.snap, this, bound, type);
-    node.onclick(() => {
+    var node = new Node(id, this, bound, type);
+    node.on('click', () => {
       this.emit("nodeClicked", {node: node})
     });
     this.nodes[id] = node;

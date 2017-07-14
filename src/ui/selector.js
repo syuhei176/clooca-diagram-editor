@@ -107,7 +107,7 @@ export class Selector extends EventEmitter {
 		this.group.attr({
 			visibility : "visible"
 		});
-		if(this.target) this.target.off("onmove");
+		if(this.target) this.target.removeListener("move", this.refresh.bind(this));
 		this.target = node;
 		this.target_bound = {
 			x : this.target.getBound().x,
@@ -118,9 +118,7 @@ export class Selector extends EventEmitter {
 		this.pos.x = node.getX();
 		this.pos.y = node.getY();
 		this.refresh();
-		this.target.onmove(() => {
-			this.refresh();
-		});
+		this.target.on('move', this.refresh.bind(this));
 
 	}
 

@@ -74,7 +74,7 @@ class DraggableElement extends Element {
       this.isDragging = true
       this.draggingX = e.clientX
       this.draggingY = e.clientY
-      onStart()
+      onStart(this.draggingX, this.draggingY)
     }, false)
   }
 

@@ -465,7 +465,7 @@ class DraggableElement extends Element {
       this.isDragging = true;
       this.draggingX = e.clientX;
       this.draggingY = e.clientY;
-      onStart();
+      onStart(this.draggingX, this.draggingY);
     }, false);
   }
 
@@ -509,20 +509,22 @@ const SVGUtil = {
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events__ = __webpack_require__(0);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_events__);
-var Node = __webpack_require__(8);
-var Connection = __webpack_require__(7);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__node__ = __webpack_require__(8);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__edge__ = __webpack_require__(7);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__ui_svg_util__ = __webpack_require__(1);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_events__ = __webpack_require__(0);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_events___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_3_events__);
 
 
-class Diagram extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 
-  constructor(s) {
+
+
+class Diagram extends __WEBPACK_IMPORTED_MODULE_3_events__["EventEmitter"] {
+
+  constructor(rootElement) {
     super();
-    this.snap = s;
-    this.base = this.snap.group();
-    var gui_group = this.snap.group();
-
+    this.base = __WEBPACK_IMPORTED_MODULE_2__ui_svg_util__["a" /* default */].createElement('g', {});
+    rootElement.appendChild(this.base.getEl());
     this.nodes = {};
     this.connections = {};
   }
@@ -533,8 +535,8 @@ class Diagram extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 
   addNode(id, type, bound) {
 
-    var node = new Node(id, this.snap, this, bound, type);
-    node.onclick(() => {
+    var node = new __WEBPACK_IMPORTED_MODULE_0__node__["a" /* default */](id, this, bound, type);
+    node.on('click', () => {
       this.emit("nodeClicked", { node: node });
     });
     this.nodes[id] = node;
@@ -560,7 +562,7 @@ class Diagram extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 
   addConnection(id, start, end) {
 
-    var con = new Connection(id, this.snap, this, start, end);
+    var con = new __WEBPACK_IMPORTED_MODULE_1__edge__["a" /* default */](id, this.snap, this, start, end);
     con.onclick(() => {
       this.connection_selector.setTarget(con);
     });
@@ -688,7 +690,7 @@ class Selector extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 		this.group.attr({
 			visibility: "visible"
 		});
-		if (this.target) this.target.off("onmove");
+		if (this.target) this.target.removeListener("move", this.refresh.bind(this));
 		this.target = node;
 		this.target_bound = {
 			x: this.target.getBound().x,
@@ -699,9 +701,7 @@ class Selector extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 		this.pos.x = node.getX();
 		this.pos.y = node.getY();
 		this.refresh();
-		this.target.onmove(() => {
-			this.refresh();
-		});
+		this.target.on('move', this.refresh.bind(this));
 	}
 
 	getEl() {
@@ -9756,31 +9756,48 @@ module.exports = uuid;
 
 /***/ }),
 /* 7 */
-/***/ (function(module, exports) {
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__ui_svg_util__ = __webpack_require__(1);
+
 
 function Connection(id, s, diagram, start, end) {
 	var self = this;
 	this.id = id;
-	this.snap = s;
 	this.start = {};
 	this.end = {};
-	this.elem = this.snap.path("M0 0L0 0").attr({
+	this.elem = __WEBPACK_IMPORTED_MODULE_0__ui_svg_util__["a" /* default */].createElement('path', {
+		d: "M0 0L0 0",
 		fill: "none",
 		stroke: "#333",
 		strokeWidth: 4
 	});
-	this.coll = this.snap.path("M0 0L0 0").attr({
+
+	this.coll = __WEBPACK_IMPORTED_MODULE_0__ui_svg_util__["a" /* default */].createDraggableElement('path', {
+		d: "M0 0L0 0",
 		visibility: "hidden",
 		"pointer-events": "stroke",
 		strokeWidth: 20
 	});
-	this.coll.addClass("node");
 
-	diagram.getGroup().append(this.elem);
-	diagram.getGroup().append(this.coll);
+	this.coll.className("node");
 
-	this.setStartPos(start.x, start.y);
-	this.setEndPos(end.x, end.y);
+	diagram.getGroup().appendChild(this.elem);
+	diagram.getGroup().appendChild(this.coll);
+
+	this.setStartPos(start.getX(), start.getY());
+	this.setEndPos(end.getX(), end.getY());
+	start.addConnection(this);
+	end.addConnection(this);
+	start.on('move', () => {
+		this.setStartPos(start.getX(), start.getY());
+		this.refresh();
+	});
+	end.on('move', () => {
+		this.setEndPos(end.getX(), end.getY());
+		this.refresh();
+	});
 
 	this.base_start = {};
 	this.base_end = {};
@@ -9846,131 +9863,144 @@ Connection.prototype.refresh = function () {
 	});
 };
 
-module.exports = Connection;
+/* harmony default export */ __webpack_exports__["a"] = (Connection);
 
 /***/ }),
 /* 8 */
-/***/ (function(module, exports) {
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events__ = __webpack_require__(0);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_events__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__ = __webpack_require__(1);
 
 
-function Node(id, s, diagram, bound, type) {
-	var self = this;
-	this.id = id;
-	if (typeof bound.w != "number" || bound.w <= 1) bound.w = 2;
-	if (typeof bound.h != "number" || bound.h <= 1) bound.h = 2;
-	this.bound = {
-		x: bound.x,
-		y: bound.y,
-		w: bound.w,
-		h: bound.h
-	};
-	this.color = "#fff";
-	this.type = type;
-	if (type == "rect") this.elem = s.rect(0, 0, this.bound.w, this.bound.h);else if (type == "ellipse") this.elem = s.ellipse(this.bound.w / 2, this.bound.h / 2, this.bound.w / 2, this.bound.h / 2);else if (type == "rectangle") this.elem = s.rect(0, 0, this.bound.w, this.bound.h, 5, 5);else this.elem = s.ellipse(0, 0, this.bound.w, this.bound.h);
-	diagram.getGroup().append(this.elem);
-	this.start_pos = {
-		x: 0,
-		y: 0
-	};
-	this.listeners = {
-		onclick: null,
-		onmove: null
-	};
-	this.elem.drag(function (dx, dy, x, y, e) {
-		self.setPos(self.start_pos.x + dx, self.start_pos.y + dy);
-		if (self.listeners.onmove) self.listeners.onmove();
-	}, function (x, y) {
-		self.start_pos.x = self.bound.x;
-		self.start_pos.y = self.bound.y;
-	}, function (e) {
-		diagram.emit('nodeupdate', self);
-	});
-	this.elem.click(function () {
-		self.listeners.onclick();
-	});
-	this.init();
-}
 
-Node.prototype.init = function (onclick) {
-	this.elem.attr({
-		fill: this.color,
-		stroke: "#000",
-		strokeWidth: 1
-	});
-	this.elem.addClass("node");
-	this.refresh();
-};
+class Node extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 
-Node.prototype.remove = function () {};
-
-Node.prototype.onclick = function (onclick) {
-	this.listeners.onclick = onclick;
-};
-
-Node.prototype.onmove = function (onmove) {
-	this.listeners.onmove = onmove;
-};
-
-Node.prototype.off = function (event) {
-	this.listeners[event] = null;
-};
-
-Node.prototype.setPos = function (x, y) {
-	this.bound.x = x;
-	this.bound.y = y;
-	this.refresh();
-};
-
-Node.prototype.getBound = function () {
-	return this.bound;
-};
-
-Node.prototype.getX = function () {
-	return this.bound.x;
-};
-
-Node.prototype.getY = function () {
-	return this.bound.y;
-};
-
-Node.prototype.setSize = function (w, h) {
-	if (typeof w != "number" || w <= 1) w = 2;
-	if (typeof h != "number" || h <= 1) h = 2;
-	this.bound.w = w;
-	this.bound.h = h;
-	this.refresh();
-};
-
-Node.prototype.setW = function (w) {
-	if (typeof w != "number" || w <= 1) w = 2;
-	this.bound.w = w;
-	this.refresh();
-};
-
-Node.prototype.setH = function (h) {
-	if (typeof h != "number" || h <= 1) h = 2;
-	this.bound.h = h;
-	this.refresh();
-};
-
-Node.prototype.refresh = function () {
-	this.elem.transform("translate(" + this.bound.x + "," + this.bound.y + ")");
-	if (this.type == "rect" || this.type == "rectangle") {
-		this.elem.attr({
+	constructor(id, diagram, bound, type) {
+		super();
+		var self = this;
+		this.id = id;
+		if (typeof bound.w != "number" || bound.w <= 1) bound.w = 2;
+		if (typeof bound.h != "number" || bound.h <= 1) bound.h = 2;
+		this.bound = {
+			x: bound.x,
+			y: bound.y,
+			w: bound.w,
+			h: bound.h
+		};
+		this.color = "#fff";
+		this.type = type;
+		this.connections = [];
+		this.elem = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createDraggableElement('rect', {
+			x: 0,
+			y: 0,
 			width: this.bound.w,
 			height: this.bound.h
 		});
-	} else if (this.type == "ellipse") {
-		this.elem.attr({
-			cx: this.bound.w / 2,
-			cy: this.bound.h / 2,
-			rx: this.bound.w / 2,
-			ry: this.bound.h / 2
-		});
-	} else {}
-};
 
-module.exports = Node;
+		/*
+  if(type == "rect") this.elem = s.rect(0, 0, this.bound.w, this.bound.h);
+  else if(type == "ellipse") this.elem = s.ellipse(this.bound.w/2, this.bound.h/2, this.bound.w/2, this.bound.h/2);
+  else if(type == "rectangle") this.elem = s.rect(0, 0, this.bound.w, this.bound.h, 5, 5);
+  else this.elem = s.ellipse(0, 0, this.bound.w, this.bound.h);
+  */
+		diagram.getGroup().appendChild(this.elem);
+		this.start_pos = {
+			x: 0,
+			y: 0
+		};
+		this.elem.drag((dx, dy, x, y, e) => {
+			self.setPos(self.start_pos.x + dx, self.start_pos.y + dy);
+			this.emit('move');
+		}, function (x, y) {
+			self.start_pos.x = self.bound.x;
+			self.start_pos.y = self.bound.y;
+		}, function (e) {
+			diagram.emit('nodeupdate', self);
+		});
+		this.elem.click(() => {
+			this.emit('click');
+		});
+		this.init();
+	}
+
+	init(onclick) {
+
+		this.elem.attr({
+			fill: this.color,
+			stroke: "#000",
+			strokeWidth: 1
+		});
+		this.elem.className("node");
+		this.refresh();
+	}
+
+	remove() {}
+
+	setPos(x, y) {
+		this.bound.x = x;
+		this.bound.y = y;
+		this.refresh();
+	}
+
+	getBound() {
+		return this.bound;
+	}
+
+	getX() {
+		return this.bound.x;
+	}
+
+	getY() {
+		return this.bound.y;
+	}
+
+	setSize(w, h) {
+		if (typeof w != "number" || w <= 1) w = 2;
+		if (typeof h != "number" || h <= 1) h = 2;
+		this.bound.w = w;
+		this.bound.h = h;
+		this.refresh();
+	}
+
+	setW(w) {
+		if (typeof w != "number" || w <= 1) w = 2;
+		this.bound.w = w;
+		this.refresh();
+	}
+
+	setH(h) {
+		if (typeof h != "number" || h <= 1) h = 2;
+		this.bound.h = h;
+		this.refresh();
+	}
+
+	addConnection(c) {
+		this.connections.push(c);
+	}
+
+	refresh() {
+		this.elem.transform("translate(" + this.bound.x + "," + this.bound.y + ")");
+		if (this.type == "rect" || this.type == "rectangle") {
+			this.elem.attr({
+				width: this.bound.w,
+				height: this.bound.h
+			});
+		} else if (this.type == "ellipse") {
+			this.elem.attr({
+				cx: this.bound.w / 2,
+				cy: this.bound.h / 2,
+				rx: this.bound.w / 2,
+				ry: this.bound.h / 2
+			});
+		} else {}
+	}
+
+}
+/* harmony export (immutable) */ __webpack_exports__["a"] = Node;
+
 
 /***/ }),
 /* 9 */
@@ -10013,8 +10043,7 @@ class DiagramEditor extends __WEBPACK_IMPORTED_MODULE_2_events__["EventEmitter"]
     this.connection_selector = new __WEBPACK_IMPORTED_MODULE_4__ui_selector__["b" /* ConnectionSelector */]();
     this.addGUILayer();
 
-    var s = Snap(this.el);
-    this.diagram = new __WEBPACK_IMPORTED_MODULE_0__diagram_diagram__["a" /* default */](s);
+    this.diagram = new __WEBPACK_IMPORTED_MODULE_0__diagram_diagram__["a" /* default */](this.el);
 
     this.diagram.on('nodeClicked', e => {
 
@@ -10085,6 +10114,12 @@ class DiagramEditor extends __WEBPACK_IMPORTED_MODULE_2_events__["EventEmitter"]
     var node = this.diagram.addNode(id, 'rectangle', bound);
     this.emit('addNode', { node: node });
     return node;
+  }
+
+  addConnection(src, target, _options) {
+    var options = _options || {};
+    var id = options.id || __WEBPACK_IMPORTED_MODULE_1_uuid___default()();
+    this.diagram.addConnection(id, src, target);
   }
 
   createToolPallet(toolpallet) {

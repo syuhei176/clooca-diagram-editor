@@ -1,26 +1,41 @@
+import SVGUtil from '../ui/svg-util'
+
 function Connection(id, s, diagram, start, end) {
 	var self = this;
 	this.id = id;
-    this.snap = s;
-    this.start = {};
-    this.end = {};
-    this.elem = this.snap.path("M0 0L0 0").attr({
-        fill: "none",
-        stroke: "#333",
-        strokeWidth: 4
-    });
-    this.coll = this.snap.path("M0 0L0 0").attr({
-    	visibility : "hidden",
-    	"pointer-events" : "stroke",
-        strokeWidth: 20
-    });
-	this.coll.addClass("node");
+  this.start = {};
+  this.end = {};
+  this.elem = SVGUtil.createElement('path', {
+    d: "M0 0L0 0",
+    fill: "none",
+    stroke: "#333",
+    strokeWidth: 4
+  })
 
-	diagram.getGroup().append(this.elem);
-	diagram.getGroup().append(this.coll);
+  this.coll = SVGUtil.createDraggableElement('path', {
+    d: "M0 0L0 0",
+    visibility : "hidden",
+    "pointer-events" : "stroke",
+    strokeWidth: 20
+  })
 
-	this.setStartPos(start.x, start.y);
-	this.setEndPos(end.x, end.y);
+	this.coll.className("node");
+
+	diagram.getGroup().appendChild(this.elem);
+	diagram.getGroup().appendChild(this.coll);
+
+	this.setStartPos(start.getX(), start.getY());
+	this.setEndPos(end.getX(), end.getY());
+  start.addConnection(this)
+  end.addConnection(this)
+  start.on('move', ()=>{
+    this.setStartPos(start.getX(), start.getY());
+    this.refresh()
+  })
+  end.on('move', ()=>{
+    this.setEndPos(end.getX(), end.getY());
+    this.refresh()
+  })
 
 	this.base_start = {};
 	this.base_end = {};
@@ -87,4 +102,4 @@ Connection.prototype.refresh = function() {
 	});
 }
 
-module.exports = Connection;
+export default Connection;
