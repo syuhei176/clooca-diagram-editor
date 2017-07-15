@@ -10,3 +10,9 @@
   height: 40;
   background: url("./rect-icon.svg");
 }
+
+.removeIcon {
+  width: 20;
+  height: 20;
+  background: url("./remove-icon.svg");
+}

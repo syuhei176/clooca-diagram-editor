@@ -12,6 +12,10 @@ class Element {
     this.el.appendChild(el.getEl())
   }
 
+  removeChild(el) {
+    this.el.removeChild(el.getEl())
+  }
+
   attr(options) {
     this.setAttr(options)
   }
@@ -87,7 +91,7 @@ const createElement = function(type, options, style) {
     el.setAttributeNS(null, key, options[key])
   })
   if(style) {
-    el.style = style
+    //el.style = style
   }
   return new Element(el)
 }

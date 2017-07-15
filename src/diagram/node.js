@@ -7,6 +7,7 @@ export default class Node extends EventEmitter {
 		super()
 		var self = this;
 		this.id = id;
+		this.diagram = diagram
 		if(typeof bound.w != "number" || bound.w <= 1) bound.w = 2;
 		if(typeof bound.h != "number" || bound.h <= 1) bound.h = 2;
 		this.bound = {
@@ -63,8 +64,9 @@ export default class Node extends EventEmitter {
 
 	}
 
-	remove() {
-
+	removeSelf() {
+		this.diagram.getGroup().removeChild(this.elem);
+		this.diagram.removeNode(this.id)
 	}
 
 	setPos(x, y) {

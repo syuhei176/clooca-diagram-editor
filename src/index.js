@@ -1,5 +1,3 @@
-const Snap = require('imports-loader?this=>window,fix=>module.exports=0!snapsvg/dist/snap.svg.js');
-
 import Diagram from './diagram/diagram'
 import uuid from 'uuid'
 import {EventEmitter} from 'events'

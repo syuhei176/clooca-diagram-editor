@@ -1,0 +1,7 @@
+<svg width="20" height="20" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+ <g>
+  <ellipse ry="20" rx="20" id="svg_1" cy="20" cx="20" stroke-width="1.5" stroke="#ff0000" fill="#ff5656"/>
+  <ellipse ry="93" id="svg_2" cy="93.75" cx="1.75" stroke-width="1.5" stroke="#000" fill="#fff"/>
+  <path stroke="#ff0000" id="svg_3" d="m7.914208,14.126632l5.514531,-6.039724l5.858,6.415853l5.858,-6.415853l5.514582,6.039724l-5.858002,6.415905l5.858002,6.415905l-5.514582,6.039781l-5.858,-6.415907l-5.858,6.415907l-5.514531,-6.039781l5.857952,-6.415905l-5.857952,-6.415905z" stroke-width="0" fill="#ffffff"/>
+ </g>
+</svg>

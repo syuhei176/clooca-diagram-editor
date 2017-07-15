@@ -28,15 +28,8 @@ export default class Diagram extends EventEmitter {
 
   }
 
-  remove(id) {
-    var self = this;
-    var elem = this.nodes[id];
-    if(elem) {
-      elem.remove();
-    }else{
-        elem = this.connections[id];
-        elem.remove();
-    }
+  removeNode(id) {
+    delete this.nodes[id];
   }
 
   updateNode(id, bound) {

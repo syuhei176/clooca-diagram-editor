@@ -1,5 +1,6 @@
 import {EventEmitter} from 'events'
 import SVGUtil from './svg-util'
+import Style from './icon.css'
 
 
 const CursorRange = 6
@@ -43,8 +44,20 @@ export class Selector extends EventEmitter {
 			ne : SVGUtil.createDraggableElement('circle', Object.assign(baseAttrs, {x:100,y:0}) ),
 			sw : SVGUtil.createDraggableElement('circle', Object.assign(baseAttrs, {x:0,y:100}) ),
 			se : SVGUtil.createDraggableElement('circle', Object.assign(baseAttrs, {x:100,y:100}) ),
-			remove : SVGUtil.createDraggableElement('circle', Object.assign(baseAttrs, {x:120,y:50}) )
+			remove : SVGUtil.createDraggableElement('g', Object.assign(baseAttrs, {x:120,y:50}) )
 		}
+
+    const foreignObject = SVGUtil.createElement('foreignObject', {
+      x: 10,
+      y: -40,
+      width: 20,
+      height: 20
+    })
+    const div = document.createElement('div')
+    foreignObject.el.appendChild(div)
+    div.classList.add(Style['removeIcon'])
+    this.cursor.remove.appendChild(foreignObject)
+
 		for(var key in this.cursor) {
 			this.group.appendChild(this.cursor[key]);
 		}
@@ -87,7 +100,7 @@ export class Selector extends EventEmitter {
 			this.refresh();
 		}, start, end);
 		this.cursor["remove"].click(() => {
-			this.fireOnRemoved(this.target);
+			this.onRemove()
 			this.clear();
 		}, start, end);
 
@@ -163,6 +176,11 @@ export class Selector extends EventEmitter {
 			cy : this.target.getBound().h+CursorOffset
 		});
 
+	}
+
+	onRemove() {
+		this.emit('remove', this.target);
+    this.target.removeSelf()
 	}
 
 }
