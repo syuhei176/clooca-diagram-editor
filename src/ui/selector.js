@@ -6,10 +6,13 @@ import Style from './icon.css'
 const CursorRange = 6
 const CursorOffset = 10
 
+const MODE_NORMAL = 0
+const MODE_RUBBERBAND = 1
 
 export class Selector extends EventEmitter {
 	constructor() {
 		super()
+    this.mode = MODE_NORMAL
 		this.pos = {
 			x : 0,
 			y : 0
@@ -26,6 +29,17 @@ export class Selector extends EventEmitter {
 			this.emit('change', this.target);
 			this.setTarget(this.target);
 		}
+    const onRubberBundStart = () => {
+      console.log("start")
+    }
+    const onRubberBundEnd = (target) => {
+      const startId = this.target.getId()
+      const endId = target.dataset.cid
+			this.emit('rubberbundend', {
+        startId: startId,
+        endId: endId
+      });
+    }
 
 
 		this.group = SVGUtil.createElement('g', {})
@@ -44,19 +58,34 @@ export class Selector extends EventEmitter {
 			ne : SVGUtil.createDraggableElement('circle', Object.assign(baseAttrs, {x:100,y:0}) ),
 			sw : SVGUtil.createDraggableElement('circle', Object.assign(baseAttrs, {x:0,y:100}) ),
 			se : SVGUtil.createDraggableElement('circle', Object.assign(baseAttrs, {x:100,y:100}) ),
-			remove : SVGUtil.createDraggableElement('g', Object.assign(baseAttrs, {x:120,y:50}) )
+			remove : SVGUtil.createDraggableElement('g', Object.assign(baseAttrs, {x:120,y:50}) ),
+			conn : SVGUtil.createDraggableElement('g', Object.assign(baseAttrs, {x:146,y:50}) )
 		}
 
-    const foreignObject = SVGUtil.createElement('foreignObject', {
-      x: 10,
-      y: -40,
-      width: 20,
-      height: 20
-    })
-    const div = document.createElement('div')
-    foreignObject.el.appendChild(div)
-    div.classList.add(Style['removeIcon'])
-    this.cursor.remove.appendChild(foreignObject)
+    {
+      const foreignObject = SVGUtil.createElement('foreignObject', {
+        x: 10,
+        y: -40,
+        width: 20,
+        height: 20
+      })
+      const div = document.createElement('div')
+      foreignObject.el.appendChild(div)
+      div.classList.add(Style['removeIcon'])
+      this.cursor.remove.appendChild(foreignObject)
+    }
+    {
+      const foreignObject = SVGUtil.createElement('foreignObject', {
+        x: 36,
+        y: -40,
+        width: 20,
+        height: 20
+      })
+      const div = document.createElement('div')
+      foreignObject.el.appendChild(div)
+      div.classList.add(Style['connIcon'])
+      this.cursor.conn.appendChild(foreignObject)
+    }
 
 		for(var key in this.cursor) {
 			this.group.appendChild(this.cursor[key]);
@@ -103,12 +132,15 @@ export class Selector extends EventEmitter {
 			this.onRemove()
 			this.clear();
 		}, start, end);
-
+		this.cursor["conn"].drag(() => {
+			this.onConn()
+			this.clear();
+		}, onRubberBundStart, onRubberBundEnd);
 		this.clear();
 	}
 
 	clear() {
-		this.target = null;
+		//this.target = null;
 		this.group.attr({
 			visibility : "hidden"
 		});
@@ -182,6 +214,10 @@ export class Selector extends EventEmitter {
 		this.emit('remove', this.target);
     this.target.removeSelf()
 	}
+
+  onConn() {
+    this.mode = MODE_RUBBERBAND
+  }
 
 }
 

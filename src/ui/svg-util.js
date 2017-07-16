@@ -71,7 +71,7 @@ class DraggableElement extends Element {
     window.addEventListener('mouseup', (e) => {
       if(this.isDragging) {
         this.isDragging = false
-        onEnd()
+        onEnd(e.target)
       }
     }, false)
     this.el.addEventListener('mousedown', (e) => {

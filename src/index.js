@@ -3,6 +3,7 @@ import uuid from 'uuid'
 import {EventEmitter} from 'events'
 import ToolPallet from './ui/toolpallet'
 import {Selector, ConnectionSelector} from './ui/selector'
+import SVGUtil from './ui/svg-util'
 
 class DiagramEditor extends EventEmitter {
   constructor(el) {
@@ -24,14 +25,18 @@ class DiagramEditor extends EventEmitter {
     this.selector = new Selector();
     this.connection_selector = new ConnectionSelector();
     this.addGUILayer()
-
     this.diagram = new Diagram(this.el);
+    this.addTopGUILayer()
 
     this.diagram.on('nodeClicked', (e) => {
 
       this.selector.setTarget(e.node)
     })
-
+    this.selector.on('rubberbundend', (e) => {
+      const start = this.diagram.getNode(e.startId)
+      const end = this.diagram.getNode(e.endId)
+      this.addConnection(start, end, {})
+    })
 
   }
 
@@ -55,7 +60,6 @@ class DiagramEditor extends EventEmitter {
     */
 
     layer.appendChild(layerClicker)
-    layer.appendChild(this.selector.getEl())
     layerClicker.addEventListener('click', (e)=>{
       console.log(e)
       this.emit('click', {
@@ -93,7 +97,12 @@ class DiagramEditor extends EventEmitter {
       }
     })
 
+  }
 
+  addTopGUILayer() {
+    this.topGUILayer = SVGUtil.createElement('g', {})
+    this.topGUILayer.appendChild(this.selector)
+    this.el.appendChild(this.topGUILayer.getEl())
   }
 
   addNode(_options) {

@@ -16,3 +16,9 @@
   height: 20;
   background: url("./remove-icon.svg");
 }
+
+.connIcon {
+  width: 20;
+  height: 20;
+  background: url("./conn-icon.svg");
+}

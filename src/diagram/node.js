@@ -23,7 +23,8 @@ export default class Node extends EventEmitter {
 	  	x: 0,
 	  	y: 0,
 	  	width: this.bound.w,
-	  	height: this.bound.h
+	  	height: this.bound.h,
+      'data-cid': this.id
 	  })
 
 		/*
@@ -51,6 +52,10 @@ export default class Node extends EventEmitter {
 		});
 		this.init();
 	}
+
+  getId() {
+    return this.id
+  }
 
 	init(onclick) {
 

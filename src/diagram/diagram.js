@@ -53,4 +53,9 @@ export default class Diagram extends EventEmitter {
     this.connections[id].setStartPos(start.x, start.y);
     this.connections[id].setEndPos(end.x, end.y);
   }
+
+  getNode(id) {
+    return this.nodes[id]
+  }
+  
 }
