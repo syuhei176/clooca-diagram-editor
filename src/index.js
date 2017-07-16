@@ -34,8 +34,20 @@ class DiagramEditor extends EventEmitter {
     })
     this.selector.on('rubberbundend', (e) => {
       const start = this.diagram.getNode(e.startId)
-      const end = this.diagram.getNode(e.endId)
-      this.addConnection(start, end, {})
+      if(e.endId) {
+        const end = this.diagram.getNode(e.endId)
+        this.addConnection(start, end, {})
+      }else{
+        const newNode = this.addNode({
+          bound: {
+            x: e.event.x,
+            y: e.event.y,
+            w: 100,
+            h: 100
+          }
+        });
+        this.addConnection(start, newNode, {})
+      }
     })
 
   }

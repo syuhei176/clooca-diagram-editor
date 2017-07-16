@@ -154,7 +154,7 @@ class DraggableElement extends Element {
     window.addEventListener('mouseup', e => {
       if (this.isDragging) {
         this.isDragging = false;
-        onEnd(e.target);
+        onEnd(e);
       }
     }, false);
     this.el.addEventListener('mousedown', e => {
@@ -652,12 +652,14 @@ class Selector extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 		const onRubberBundStart = () => {
 			console.log("start");
 		};
-		const onRubberBundEnd = target => {
+		const onRubberBundEnd = e => {
+			console.log(e.target);
 			const startId = this.target.getId();
-			const endId = target.dataset.cid;
+			const endId = e.target.dataset.cid;
 			this.emit('rubberbundend', {
 				startId: startId,
-				endId: endId
+				endId: endId,
+				event: event
 			});
 		};
 
@@ -683,7 +685,7 @@ class Selector extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 
 		{
 			const foreignObject = __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createElement('foreignObject', {
-				x: 10,
+				x: 6,
 				y: -40,
 				width: 20,
 				height: 20
@@ -695,7 +697,7 @@ class Selector extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 		}
 		{
 			const foreignObject = __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createElement('foreignObject', {
-				x: 36,
+				x: 32,
 				y: -40,
 				width: 20,
 				height: 20
@@ -1509,8 +1511,20 @@ class DiagramEditor extends __WEBPACK_IMPORTED_MODULE_2_events__["EventEmitter"]
     });
     this.selector.on('rubberbundend', e => {
       const start = this.diagram.getNode(e.startId);
-      const end = this.diagram.getNode(e.endId);
-      this.addConnection(start, end, {});
+      if (e.endId) {
+        const end = this.diagram.getNode(e.endId);
+        this.addConnection(start, end, {});
+      } else {
+        const newNode = this.addNode({
+          bound: {
+            x: e.event.x,
+            y: e.event.y,
+            w: 100,
+            h: 100
+          }
+        });
+        this.addConnection(start, newNode, {});
+      }
     });
   }
 

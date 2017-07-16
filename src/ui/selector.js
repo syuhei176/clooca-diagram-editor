@@ -32,12 +32,14 @@ export class Selector extends EventEmitter {
     const onRubberBundStart = () => {
       console.log("start")
     }
-    const onRubberBundEnd = (target) => {
+    const onRubberBundEnd = (e) => {
+      console.log(e.target)
       const startId = this.target.getId()
-      const endId = target.dataset.cid
+      const endId = e.target.dataset.cid
 			this.emit('rubberbundend', {
         startId: startId,
-        endId: endId
+        endId: endId,
+        event: event
       });
     }
 
@@ -64,7 +66,7 @@ export class Selector extends EventEmitter {
 
     {
       const foreignObject = SVGUtil.createElement('foreignObject', {
-        x: 10,
+        x: 6,
         y: -40,
         width: 20,
         height: 20
@@ -76,7 +78,7 @@ export class Selector extends EventEmitter {
     }
     {
       const foreignObject = SVGUtil.createElement('foreignObject', {
-        x: 36,
+        x: 32,
         y: -40,
         width: 20,
         height: 20
