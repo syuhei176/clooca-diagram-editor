@@ -1522,7 +1522,9 @@ class Node extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 	}
 
 	addProperty() {
-		const newProperty = new __WEBPACK_IMPORTED_MODULE_2__property__["a" /* default */]({});
+		const newProperty = new __WEBPACK_IMPORTED_MODULE_2__property__["a" /* default */]({
+			node: this
+		});
 		newProperty.updateText("default");
 		newProperty.on('change', e => {
 			this.setH(newProperty.getHeight() + 20);
@@ -1570,12 +1572,13 @@ class Node extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 
 class Property extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 
-  constructor() {
+  constructor(options) {
     super();
     this.gElement = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createDraggableElement('g', {});
     this.gElement.transform("translate(0,20)");
     //this.clearText()
     this.fontSize = 14;
+    this.options = options;
   }
 
   clearText() {
@@ -1620,11 +1623,18 @@ class Property extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
   showTextarea() {
     if (this.textAreaDisplayed) return;
     this.textAreaDisplayed = true;
-    this.foreignObject = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('foreignObject', {});
+    this.foreignObject = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('foreignObject', {
+      width: this.options.node.getWidth(),
+      height: this.options.node.getHeight(),
+      y: -20
+      //requiredExtensions: "http://www.w3.org/1999/xhtml"
+    });
     const textArea = document.createElement('textarea');
     textArea.value = this.currentText;
     textArea.style['font-size'] = this.fontSize;
-    textArea.style['top'] = '0px';
+    textArea.style['margin-top'] = '0px';
+    textArea.style['width'] = this.options.node.getWidth() + 'px';
+    //textArea.style['height'] = this.options.node.getHeight() + 'px'
 
     this.foreignObject.el.appendChild(textArea);
     this.gElement2.appendChild(this.foreignObject);

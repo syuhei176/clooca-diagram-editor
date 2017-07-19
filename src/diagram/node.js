@@ -131,7 +131,9 @@ export default class Node extends EventEmitter {
 	}
 
 	addProperty() {
-		const newProperty = new Property({})
+		const newProperty = new Property({
+      node: this
+    })
 		newProperty.updateText("default")
     newProperty.on('change', (e) => {
       this.setH(newProperty.getHeight() + 20)

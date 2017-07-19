@@ -3,13 +3,14 @@ import SVGUtil from '../ui/svg-util'
 
 export default class Property extends EventEmitter {
 
-	constructor() {
+	constructor(options) {
 		super()
 	  this.gElement = SVGUtil.createDraggableElement('g', {
     })
 		this.gElement.transform("translate(0,20)");
     //this.clearText()
     this.fontSize = 14
+    this.options = options
   }
 
   clearText() {
@@ -56,11 +57,18 @@ export default class Property extends EventEmitter {
   showTextarea() {
     if(this.textAreaDisplayed) return
     this.textAreaDisplayed = true
-    this.foreignObject = SVGUtil.createElement('foreignObject', {})
+    this.foreignObject = SVGUtil.createElement('foreignObject', {
+      width: this.options.node.getWidth(),
+      height: this.options.node.getHeight(),
+      y: -20
+      //requiredExtensions: "http://www.w3.org/1999/xhtml"
+    })
     const textArea = document.createElement('textarea')
     textArea.value = this.currentText
     textArea.style['font-size'] = this.fontSize
-    textArea.style['top'] = '0px'
+    textArea.style['margin-top'] = '0px'
+    textArea.style['width'] = this.options.node.getWidth() + 'px'
+    //textArea.style['height'] = this.options.node.getHeight() + 'px'
     
     this.foreignObject.el.appendChild(textArea)
     this.gElement2.appendChild(this.foreignObject)
