@@ -1,5 +1,6 @@
 import {EventEmitter} from 'events'
 import SVGUtil from '../ui/svg-util'
+import Property from './property'
 
 export default class Node extends EventEmitter {
 
@@ -8,6 +9,7 @@ export default class Node extends EventEmitter {
 		var self = this;
 		this.id = id;
 		this.diagram = diagram
+		this.properties = []
 		if(typeof bound.w != "number" || bound.w <= 1) bound.w = 2;
 		if(typeof bound.h != "number" || bound.h <= 1) bound.h = 2;
 		this.bound = {
@@ -19,13 +21,16 @@ export default class Node extends EventEmitter {
 		this.color = "#fff";
 		this.type = type;
 		this.connections = [];
-	  this.elem = SVGUtil.createDraggableElement('rect', {
+	  this.elem = SVGUtil.createDraggableElement('g', {
+	  })
+	  this.shape = SVGUtil.createDraggableElement('rect', {
 	  	x: 0,
 	  	y: 0,
 	  	width: this.bound.w,
 	  	height: this.bound.h,
       'data-cid': this.id
 	  })
+		this.elem.appendChild(this.shape)
 
 		/*
 		if(type == "rect") this.elem = s.rect(0, 0, this.bound.w, this.bound.h);
@@ -38,16 +43,16 @@ export default class Node extends EventEmitter {
 			x : 0,
 			y : 0
 		}
-		this.elem.drag((dx, dy, x, y, e)=>{
-			self.setPos(self.start_pos.x + dx, self.start_pos.y + dy);
+		this.shape.drag((dx, dy, x, y, e)=>{
+			this.setPos(this.start_pos.x + dx, this.start_pos.y + dy);
 			this.emit('move')
-		}, function(x, y) {
-			self.start_pos.x = self.bound.x;
-			self.start_pos.y = self.bound.y;
-		}, function(e) {
-			diagram.emit('nodeupdate', self);
+		}, (x, y) => {
+			this.start_pos.x = this.bound.x;
+			this.start_pos.y = this.bound.y;
+		}, (e) => {
+			diagram.emit('nodeupdate', this);
 		});
-		this.elem.click(() => {
+		this.shape.click(() => {
 			this.emit('click')
 		});
 		this.init();
@@ -67,6 +72,7 @@ export default class Node extends EventEmitter {
 		this.elem.className("node");
 		this.refresh();
 
+		this.addProperty()
 	}
 
 	removeSelf() {
@@ -124,15 +130,22 @@ export default class Node extends EventEmitter {
 	  this.connections.push(c);
 	}
 
+	addProperty() {
+		const newProperty = new Property({})
+		newProperty.updateText("default")
+		this.properties.push(newProperty)
+		this.elem.appendChild(newProperty.getEl())
+	}
+
 	refresh() {
 		this.elem.transform("translate("+this.bound.x+","+this.bound.y+")");
 		if(this.type == "rect" || this.type == "rectangle") {
-			this.elem.attr({
+			this.shape.attr({
 				width : this.bound.w,
 				height : this.bound.h
 			});
 		}else if(this.type == "ellipse") {
-			this.elem.attr({
+			this.shape.attr({
 				cx : this.bound.w/2,
 				cy : this.bound.h/2,
 				rx : this.bound.w/2,

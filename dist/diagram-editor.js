@@ -124,6 +124,14 @@ class Element {
     this.el.setAttributeNS(null, 'transform', translate);
   }
 
+  getTextContent(text) {
+    return this.el.textContent;
+  }
+
+  setTextContent(text) {
+    this.el.textContent = text;
+  }
+
   click(onClick) {
     this.el.addEventListener('click', e => {
       onClick(e);
@@ -1381,6 +1389,8 @@ Connection.prototype.refresh = function () {
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events__ = __webpack_require__(1);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_events__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__ = __webpack_require__(0);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__property__ = __webpack_require__(20);
+
 
 
 
@@ -1391,6 +1401,7 @@ class Node extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 		var self = this;
 		this.id = id;
 		this.diagram = diagram;
+		this.properties = [];
 		if (typeof bound.w != "number" || bound.w <= 1) bound.w = 2;
 		if (typeof bound.h != "number" || bound.h <= 1) bound.h = 2;
 		this.bound = {
@@ -1402,13 +1413,15 @@ class Node extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 		this.color = "#fff";
 		this.type = type;
 		this.connections = [];
-		this.elem = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createDraggableElement('rect', {
+		this.elem = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createDraggableElement('g', {});
+		this.shape = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createDraggableElement('rect', {
 			x: 0,
 			y: 0,
 			width: this.bound.w,
 			height: this.bound.h,
 			'data-cid': this.id
 		});
+		this.elem.appendChild(this.shape);
 
 		/*
   if(type == "rect") this.elem = s.rect(0, 0, this.bound.w, this.bound.h);
@@ -1421,16 +1434,16 @@ class Node extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 			x: 0,
 			y: 0
 		};
-		this.elem.drag((dx, dy, x, y, e) => {
-			self.setPos(self.start_pos.x + dx, self.start_pos.y + dy);
+		this.shape.drag((dx, dy, x, y, e) => {
+			this.setPos(this.start_pos.x + dx, this.start_pos.y + dy);
 			this.emit('move');
-		}, function (x, y) {
-			self.start_pos.x = self.bound.x;
-			self.start_pos.y = self.bound.y;
-		}, function (e) {
-			diagram.emit('nodeupdate', self);
+		}, (x, y) => {
+			this.start_pos.x = this.bound.x;
+			this.start_pos.y = this.bound.y;
+		}, e => {
+			diagram.emit('nodeupdate', this);
 		});
-		this.elem.click(() => {
+		this.shape.click(() => {
 			this.emit('click');
 		});
 		this.init();
@@ -1449,6 +1462,8 @@ class Node extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 		});
 		this.elem.className("node");
 		this.refresh();
+
+		this.addProperty();
 	}
 
 	removeSelf() {
@@ -1506,15 +1521,22 @@ class Node extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 		this.connections.push(c);
 	}
 
+	addProperty() {
+		const newProperty = new __WEBPACK_IMPORTED_MODULE_2__property__["a" /* default */]({});
+		newProperty.updateText("default");
+		this.properties.push(newProperty);
+		this.elem.appendChild(newProperty.getEl());
+	}
+
 	refresh() {
 		this.elem.transform("translate(" + this.bound.x + "," + this.bound.y + ")");
 		if (this.type == "rect" || this.type == "rectangle") {
-			this.elem.attr({
+			this.shape.attr({
 				width: this.bound.w,
 				height: this.bound.h
 			});
 		} else if (this.type == "ellipse") {
-			this.elem.attr({
+			this.shape.attr({
 				cx: this.bound.w / 2,
 				cy: this.bound.h / 2,
 				rx: this.bound.w / 2,
@@ -2322,6 +2344,59 @@ try {
 // easier to handle this case. if(!global) { ...}
 
 module.exports = g;
+
+
+/***/ }),
+/* 20 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events__ = __webpack_require__(1);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_events__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__ = __webpack_require__(0);
+
+
+
+class Property extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
+
+  constructor(id, diagram, bound, type) {
+    super();
+    this.gElement = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createDraggableElement('g', {});
+    this.textElement = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createDraggableElement('text', {});
+    this.gElement.appendChild(this.textElement);
+    this.textElement.click(() => {
+      this.showTextarea();
+    });
+    this.gElement.transform("translate(0,20)");
+  }
+
+  updateText(text) {
+    this.textElement.setTextContent(text);
+  }
+
+  showTextarea() {
+    let text = this.textElement.getTextContent();
+    this.foreignObject = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('foreignObject', {});
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    this.foreignObject.el.appendChild(textArea);
+    this.gElement.appendChild(this.foreignObject);
+    textArea.addEventListener('blur', () => {
+      this.updateText(textArea.value);
+      this.hideTextarea();
+    });
+  }
+
+  hideTextarea() {
+    this.gElement.removeChild(this.foreignObject);
+  }
+
+  getEl() {
+    return this.gElement;
+  }
+
+}
+/* harmony export (immutable) */ __webpack_exports__["a"] = Property;
 
 
 /***/ })

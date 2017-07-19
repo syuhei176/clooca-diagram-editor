@@ -41,6 +41,14 @@ class Element {
     this.el.setAttributeNS(null, 'transform', translate)
   }
 
+  getTextContent(text) {
+    return this.el.textContent
+  }
+
+  setTextContent(text) {
+    this.el.textContent = text
+  }
+
   click(onClick) {
     this.el.addEventListener('click', (e) => {
       onClick(e)
