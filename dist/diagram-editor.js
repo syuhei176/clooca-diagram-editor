@@ -1218,6 +1218,7 @@ function Connection(id, s, diagram, start, end) {
 	this.id = id;
 	this.start = {};
 	this.end = {};
+	this.points = [{}, {}];
 	this.elem = __WEBPACK_IMPORTED_MODULE_0__ui_svg_util__["a" /* default */].createElement('path', {
 		d: "M0 0L0 0",
 		fill: "none",
@@ -1237,16 +1238,19 @@ function Connection(id, s, diagram, start, end) {
 	diagram.getGroup().appendChild(this.elem);
 	diagram.getGroup().appendChild(this.coll);
 
-	this.setStartPos(start.getX(), start.getY());
-	this.setEndPos(end.getX(), end.getY());
+	this.setStartPos(start, end);
+	this.setEndPos(start, end);
+
 	start.addConnection(this);
 	end.addConnection(this);
 	start.on('move', () => {
-		this.setStartPos(start.getX(), start.getY());
+		this.setStartPos(start, end);
+		this.setEndPos(start, end);
 		this.refresh();
 	});
 	end.on('move', () => {
-		this.setEndPos(end.getX(), end.getY());
+		this.setStartPos(start, end);
+		this.setEndPos(start, end);
 		this.refresh();
 	});
 
@@ -1285,15 +1289,62 @@ Connection.prototype.off = function (event) {
 	this.listeners[event] = null;
 };
 
-Connection.prototype.setStartPos = function (x, y) {
-	this.start.x = x;
-	this.start.y = y;
+Connection.prototype.checkRelPos = function (start, end) {
+	let area;
+	if (start.getX() + start.getWidth() < end.getX()) {
+		area = 2;
+	} else if (start.getX() > end.getX() + end.getWidth()) {
+		area = 1;
+	} else {
+		if (start.getY() + start.getHeight() < end.getY()) {
+			area = 4;
+		} else if (start.getY() > end.getY()) {
+			area = 3;
+		} else {
+			area = 3;
+		}
+	}
+	return area;
+};
+
+Connection.prototype.setStartPos = function (start, end) {
+	let area = this.checkRelPos(start, end);
+	if (area == 1) {
+		this.start.x = start.getX();
+		this.start.y = start.getY() + start.getHeight() / 2;
+	} else if (area == 2) {
+		this.start.x = start.getX() + start.getWidth();
+		this.start.y = start.getY() + start.getHeight() / 2;
+	} else if (area == 3) {
+		this.start.x = start.getX() + start.getWidth() / 2;
+		this.start.y = start.getY();
+	} else if (area == 4) {
+		this.start.x = start.getX() + start.getWidth() / 2;
+		this.start.y = start.getY() + start.getHeight();
+	}
+	this.points[0].x = this.start.x;
+	this.points[0].y = this.start.y;
 	this.refresh();
 };
 
-Connection.prototype.setEndPos = function (x, y) {
-	this.end.x = x;
-	this.end.y = y;
+Connection.prototype.setEndPos = function (start, end) {
+	let area = this.checkRelPos(end, start);
+	if (area == 1) {
+		this.end.x = end.getX();
+		this.end.y = end.getY() + end.getHeight() / 2;
+	} else if (area == 2) {
+		this.end.x = end.getX() + end.getWidth();
+		this.end.y = end.getY() + end.getHeight() / 2;
+	} else if (area == 3) {
+		this.end.x = end.getX() + end.getWidth() / 2;
+		this.end.y = end.getY();
+	} else if (area == 4) {
+		this.end.x = end.getX() + end.getWidth() / 2;
+		this.end.y = end.getY() + end.getHeight();
+	}
+	const length = this.points.length;
+	this.points[length - 1].x = this.end.x;
+	this.points[length - 1].y = this.end.y;
 	this.refresh();
 };
 
@@ -1306,11 +1357,17 @@ Connection.prototype.getEndPos = function () {
 };
 
 Connection.prototype.refresh = function () {
+	const startPoint = this.points[0];
+	const points = this.points.slice(1);
+	let str = "M" + startPoint.x + ' ' + startPoint.y;
+	points.forEach(p => {
+		str += "L" + p.x + " " + p.y;
+	});
 	this.elem.attr({
-		d: "M" + this.start.x + " " + this.start.y + "L" + this.end.x + " " + this.end.y
+		d: str
 	});
 	this.coll.attr({
-		d: "M" + this.start.x + " " + this.start.y + "L" + this.end.x + " " + this.end.y
+		d: str
 	});
 };
 
@@ -1415,6 +1472,14 @@ class Node extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 
 	getY() {
 		return this.bound.y;
+	}
+
+	getWidth() {
+		return this.bound.w;
+	}
+
+	getHeight() {
+		return this.bound.h;
 	}
 
 	setSize(w, h) {

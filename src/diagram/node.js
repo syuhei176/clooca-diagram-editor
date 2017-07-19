@@ -92,6 +92,14 @@ export default class Node extends EventEmitter {
 		return this.bound.y;
 	}
 
+	getWidth() {
+		return this.bound.w
+	}
+
+	getHeight() {
+		return this.bound.h
+	}
+
 	setSize(w, h) {
 		if(typeof w != "number" || w <= 1) w = 2;
 		if(typeof h != "number" || h <= 1) h = 2;
