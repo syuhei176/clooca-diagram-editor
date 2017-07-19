@@ -74,7 +74,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 9);
+/******/ 	return __webpack_require__(__webpack_require__.s = 10);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -523,7 +523,7 @@ function isUndefined(arg) {
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(10);
+var content = __webpack_require__(11);
 if(typeof content === 'string') content = [[module.i, content, '']];
 // Prepare cssTransformation
 var transform;
@@ -531,7 +531,7 @@ var transform;
 var options = {}
 options.transform = transform
 // add the styles to the DOM
-var update = __webpack_require__(12)(content, options);
+var update = __webpack_require__(13)(content, options);
 if(content.locals) module.exports = content.locals;
 // Hot Module Replacement
 if(false) {
@@ -1036,7 +1036,7 @@ class ToolPalletUI {
 // Unique ID creation requires a high quality random # generator.  We feature
 // detect to determine the best RNG source, normalizing to a function that
 // returns 128-bits of randomness, since that's what's usually required
-var _rng = __webpack_require__(18);
+var _rng = __webpack_require__(19);
 
 // Maps for number <-> hex string conversion
 var _byteToHex = [];
@@ -1389,7 +1389,7 @@ Connection.prototype.refresh = function () {
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events__ = __webpack_require__(1);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_events__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__ = __webpack_require__(0);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__property__ = __webpack_require__(20);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__property__ = __webpack_require__(9);
 
 
 
@@ -1524,8 +1524,16 @@ class Node extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 	addProperty() {
 		const newProperty = new __WEBPACK_IMPORTED_MODULE_2__property__["a" /* default */]({});
 		newProperty.updateText("default");
+		newProperty.on('change', e => {
+			this.setH(newProperty.getHeight() + 20);
+		});
 		this.properties.push(newProperty);
 		this.elem.appendChild(newProperty.getEl());
+	}
+
+	updateText(text) {
+		this.properties[0].updateText(text);
+		this.setH(this.properties[0].getHeight() + 20);
 	}
 
 	refresh() {
@@ -1551,6 +1559,109 @@ class Node extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 
 /***/ }),
 /* 9 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events__ = __webpack_require__(1);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_events__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__ = __webpack_require__(0);
+
+
+
+class Property extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
+
+  constructor() {
+    super();
+    this.gElement = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createDraggableElement('g', {});
+    this.gElement.transform("translate(0,20)");
+    //this.clearText()
+    this.fontSize = 14;
+  }
+
+  clearText() {
+    if (this.gElement2) this.gElement.removeChild(this.gElement2);
+    this.gElement2 = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createDraggableElement('g', {
+      'font-family': "sans-serif",
+      'font-size': this.fontSize
+    });
+    this.gElement.appendChild(this.gElement2);
+    /*
+    this.textElement = SVGUtil.createDraggableElement('text', {
+      "y": 0,
+      "fill": "#333"
+    })
+    this.gElement2.appendChild(this.textElement)
+    this.textElement.click(() => {
+      console.log('click')
+      this.showTextarea()
+    })
+    */
+  }
+
+  updateText(text) {
+    this.currentText = text;
+    this.clearText();
+    let lines = text.split("\n");
+    let elements = lines.map((line, i) => {
+      let textElement = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createDraggableElement('text', {
+        "y": 20 * i,
+        "fill": "#333"
+      });
+      textElement.setTextContent(line);
+      textElement.click(() => {
+        console.log('click');
+        this.showTextarea();
+      });
+      this.gElement2.appendChild(textElement);
+      return textElement;
+    });
+  }
+
+  showTextarea() {
+    if (this.textAreaDisplayed) return;
+    this.textAreaDisplayed = true;
+    this.foreignObject = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('foreignObject', {});
+    const textArea = document.createElement('textarea');
+    textArea.value = this.currentText;
+    textArea.style['font-size'] = this.fontSize;
+    textArea.style['top'] = '0px';
+
+    this.foreignObject.el.appendChild(textArea);
+    this.gElement2.appendChild(this.foreignObject);
+    textArea.addEventListener('change', () => {
+      this.updateText(textArea.value);
+      //this.hideTextarea()
+      this.textAreaDisplayed = false;
+      this.emit('change', this);
+    });
+    textArea.addEventListener('blur', () => {
+      this.updateText(textArea.value);
+      this.textAreaDisplayed = false;
+    });
+    textArea.addEventListener('keydown', () => {
+      textArea.rows = textArea.value.split('\n').length + 1;
+    });
+    textArea.rows = textArea.value.split('\n').length + 1;
+  }
+
+  hideTextarea() {
+    if (this.foreignObject) this.gElement2.removeChild(this.foreignObject);
+  }
+
+  getHeight() {
+    return this.currentText.split("\n").length * 20;
+  }
+
+  getEl() {
+    return this.gElement;
+  }
+
+}
+/* harmony export (immutable) */ __webpack_exports__["a"] = Property;
+
+
+/***/ }),
+/* 10 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -1702,15 +1813,15 @@ class DiagramEditor extends __WEBPACK_IMPORTED_MODULE_2_events__["EventEmitter"]
 
 
 /***/ }),
-/* 10 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(11)(undefined);
+exports = module.exports = __webpack_require__(12)(undefined);
 // imports
 
 
 // module
-exports.push([module.i, ".dgF-o1ZUTv_AfRTOpLuNd {\n  width: 40;\n  height: 40;\n  background: url(" + __webpack_require__(17) + ");\n}\n\n\n._1VhS5DDjd6dVoTWmKHTcR0 {\n  width: 40;\n  height: 40;\n  background: url(" + __webpack_require__(15) + ");\n}\n\n._1ylgUu5npeNByBmH2B96uT {\n  width: 20;\n  height: 20;\n  background: url(" + __webpack_require__(16) + ");\n}\n\n.LlWczh3uSWmHSxgUIj4-6 {\n  width: 20;\n  height: 20;\n  background: url(" + __webpack_require__(14) + ");\n}", ""]);
+exports.push([module.i, ".dgF-o1ZUTv_AfRTOpLuNd {\n  width: 40;\n  height: 40;\n  background: url(" + __webpack_require__(18) + ");\n}\n\n\n._1VhS5DDjd6dVoTWmKHTcR0 {\n  width: 40;\n  height: 40;\n  background: url(" + __webpack_require__(16) + ");\n}\n\n._1ylgUu5npeNByBmH2B96uT {\n  width: 20;\n  height: 20;\n  background: url(" + __webpack_require__(17) + ");\n}\n\n.LlWczh3uSWmHSxgUIj4-6 {\n  width: 20;\n  height: 20;\n  background: url(" + __webpack_require__(15) + ");\n}", ""]);
 
 // exports
 exports.locals = {
@@ -1721,7 +1832,7 @@ exports.locals = {
 };
 
 /***/ }),
-/* 11 */
+/* 12 */
 /***/ (function(module, exports) {
 
 /*
@@ -1803,7 +1914,7 @@ function toComment(sourceMap) {
 
 
 /***/ }),
-/* 12 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /*
@@ -1849,7 +1960,7 @@ var singleton = null;
 var	singletonCounter = 0;
 var	stylesInsertedAtTop = [];
 
-var	fixUrls = __webpack_require__(13);
+var	fixUrls = __webpack_require__(14);
 
 module.exports = function(list, options) {
 	if (typeof DEBUG !== "undefined" && DEBUG) {
@@ -2162,7 +2273,7 @@ function updateLink (link, options, obj) {
 
 
 /***/ }),
-/* 13 */
+/* 14 */
 /***/ (function(module, exports) {
 
 
@@ -2257,31 +2368,31 @@ module.exports = function (css) {
 
 
 /***/ }),
-/* 14 */
+/* 15 */
 /***/ (function(module, exports) {
 
 module.exports = "\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E %3Cg%3E %3Cellipse ry='20' rx='20' id='svg_1' cy='20' cx='20' stroke-width='1.5' stroke='%235fbf00' fill='%237fff00'/%3E %3Cellipse ry='93' id='svg_2' cy='93.75' cx='1.75' stroke-width='1.5' stroke='%23000' fill='%23fff'/%3E %3Cpath stroke='%23ff0000' transform='rotate%2890 21.704938888549805,20.405801773071293%29 ' id='svg_4' d='m11.901005,20.38227l9.803934,-9.780397l9.803934,9.780397l-4.901967,0l0,9.827458l-9.803934,0l0,-9.827458l-4.901967,0z' stroke-opacity='null' stroke-width='0' fill='%23ffffff'/%3E %3C/g%3E %3C/svg%3E\""
 
 /***/ }),
-/* 15 */
+/* 16 */
 /***/ (function(module, exports) {
 
 module.exports = "\"data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E %3Cg%3E %3Crect id='svg_1' height='48' width='56' y='6' x='2' stroke-width='1.5' stroke='%23000' fill='%23fff'/%3E %3C/g%3E %3C/svg%3E\""
 
 /***/ }),
-/* 16 */
+/* 17 */
 /***/ (function(module, exports) {
 
 module.exports = "\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E %3Cg%3E %3Cellipse ry='20' rx='20' id='svg_1' cy='20' cx='20' stroke-width='1.5' stroke='%23ff0000' fill='%23ff5656'/%3E %3Cellipse ry='93' id='svg_2' cy='93.75' cx='1.75' stroke-width='1.5' stroke='%23000' fill='%23fff'/%3E %3Cpath stroke='%23ff0000' id='svg_3' d='m7.914208,14.126632l5.514531,-6.039724l5.858,6.415853l5.858,-6.415853l5.514582,6.039724l-5.858002,6.415905l5.858002,6.415905l-5.514582,6.039781l-5.858,-6.415907l-5.858,6.415907l-5.514531,-6.039781l5.857952,-6.415905l-5.857952,-6.415905z' stroke-width='0' fill='%23ffffff'/%3E %3C/g%3E %3C/svg%3E\""
 
 /***/ }),
-/* 17 */
+/* 18 */
 /***/ (function(module, exports) {
 
 module.exports = "\"data:image/svg+xml,%3Csvg width='40' height='40' viewBox='2 2 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg%3E%3Cpath stroke='%23000' transform='rotate%28-40.575660705566406 32.45265197753906,33.954856872558594%29' id='svg_1' d='m22.055768,33.904453l10.396884,-20.949598l10.396884,20.949598l-5.198442,0l0,21.050403l-10.396883,0l0,-21.050403l-5.198442,0z' stroke-width='1.5' fill='%23fff'/%3E%3C/g%3E%3C/svg%3E\""
 
 /***/ }),
-/* 18 */
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global) {
@@ -2317,10 +2428,10 @@ if (!rng) {
 module.exports = rng;
 
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(19)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(20)))
 
 /***/ }),
-/* 19 */
+/* 20 */
 /***/ (function(module, exports) {
 
 var g;
@@ -2344,59 +2455,6 @@ try {
 // easier to handle this case. if(!global) { ...}
 
 module.exports = g;
-
-
-/***/ }),
-/* 20 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events__ = __webpack_require__(1);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_events__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__ = __webpack_require__(0);
-
-
-
-class Property extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
-
-  constructor(id, diagram, bound, type) {
-    super();
-    this.gElement = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createDraggableElement('g', {});
-    this.textElement = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createDraggableElement('text', {});
-    this.gElement.appendChild(this.textElement);
-    this.textElement.click(() => {
-      this.showTextarea();
-    });
-    this.gElement.transform("translate(0,20)");
-  }
-
-  updateText(text) {
-    this.textElement.setTextContent(text);
-  }
-
-  showTextarea() {
-    let text = this.textElement.getTextContent();
-    this.foreignObject = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('foreignObject', {});
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    this.foreignObject.el.appendChild(textArea);
-    this.gElement.appendChild(this.foreignObject);
-    textArea.addEventListener('blur', () => {
-      this.updateText(textArea.value);
-      this.hideTextarea();
-    });
-  }
-
-  hideTextarea() {
-    this.gElement.removeChild(this.foreignObject);
-  }
-
-  getEl() {
-    return this.gElement;
-  }
-
-}
-/* harmony export (immutable) */ __webpack_exports__["a"] = Property;
 
 
 /***/ })

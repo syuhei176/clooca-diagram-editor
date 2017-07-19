@@ -133,9 +133,17 @@ export default class Node extends EventEmitter {
 	addProperty() {
 		const newProperty = new Property({})
 		newProperty.updateText("default")
+    newProperty.on('change', (e) => {
+      this.setH(newProperty.getHeight() + 20)
+    })
 		this.properties.push(newProperty)
 		this.elem.appendChild(newProperty.getEl())
 	}
+
+  updateText(text) {
+    this.properties[0].updateText(text)
+    this.setH(this.properties[0].getHeight() + 20)
+  }
 
 	refresh() {
 		this.elem.transform("translate("+this.bound.x+","+this.bound.y+")");
