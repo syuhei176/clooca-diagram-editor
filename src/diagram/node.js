@@ -192,7 +192,6 @@ export default class Node extends EventEmitter {
 
 	refresh() {
 		this.elem.transform("translate("+this.bound.x+","+this.bound.y+")");
-      console.error(this.bound)
     this.shape.setSize(this.bound.w, this.bound.h)
 
     this.coll.attr({
