@@ -1,0 +1,61 @@
+<script src="diagram-editor.js"></script>
+<script>
+
+  var customSVG = '<svg width="120" height="120" xmlns="http://www.w3.org/2000/svg">' +
+  '<g>' + 
+  '<path id="svg_5" d="m-213.507947,29.895818l0.742506,-0.740012l0.742506,0.740012l-0.371253,0l0,0.743573l-0.742506,0l0,-0.743573l-0.371253,0z" stroke-opacity="null" stroke-width="0" stroke="#ff0000" fill="#ffffff"/>' + 
+  '<path stroke="#005fbf" id="svg_10" d="m95.405459,16.617409c-9.772308,-7.017142 -20.31228,-12.638313 -28.958308,-13.404647c-0.470685,-0.049708 -0.958179,-0.078705 -1.473691,-0.086989l-56.902402,0c-0.907749,0 -1.804291,0.260968 -2.443077,0.745623c-0.633183,0.472228 -1.00861,1.135004 -1.00861,1.810207l0,106.665535c0,0.671061 0.353013,1.313125 1.00861,1.801923c0.655596,0.480513 1.518518,0.741481 2.443077,0.741481l102.900612,0c0.907749,0 1.776274,-0.256826 2.43187,-0.741481c0.655596,-0.484655 1.019817,-1.126719 1.019817,-1.801923l0,-70.979182c-0.201722,-8.239136 -8.9318,-17.223895 -19.017898,-24.750546zm-4.858137,3.61213c4.510727,3.255888 8.56758,6.94258 11.593409,10.496717c-2.622385,-0.766335 -5.373649,-1.333837 -7.956811,-1.785353c-5.687439,-0.944456 -11.251602,-1.325552 -14.708893,-1.478819c0.01681,-0.550933 0.022414,-1.172285 0.022414,-1.847488c0,-3.599703 -0.308186,-8.732076 -1.994806,-13.255523c-0.01681,-0.041424 -0.028017,-0.082847 -0.05043,-0.124271c4.280988,2.087745 8.943007,4.858978 13.095117,7.994737zm16.961455,89.553484l-95.997238,0l0,-101.562159l53.467525,0l0,0.008285c2.331009,-0.103559 4.342625,1.598947 5.883557,5.492757c1.400847,3.707404 1.75386,8.541528 1.748257,11.892689c0.011207,2.456414 -0.151291,4.10507 -0.151291,4.10507l-0.274566,2.700813l3.675822,0.028996c0.01681,0 8.494736,0.074562 16.810163,1.470535c7.990431,1.275844 14.238208,3.819248 14.82096,6.698181c0.022414,0.256826 0.028017,0.513652 0.022414,0.753908l0,68.410925l-0.005603,0z" stroke-width="1.5" fill="#007fff"/>' + 
+  '</g>' + 
+  '</svg>'
+  var stateSVG = '<svg width="119.99999999999999" height="119.99999999999999" xmlns="http://www.w3.org/2000/svg">' +
+  '<g>' +
+  '<path id="svg_5" d="m-213.507947,29.895818l0.742506,-0.740012l0.742506,0.740012l-0.371253,0l0,0.743573l-0.742506,0l0,-0.743573l-0.371253,0z" stroke-opacity="null" stroke-width="0" stroke="#ff0000" fill="#ffffff"/>' +
+  '<rect stroke="#005fbf" rx="12" id="svg_11" height="116.078496" width="114.902038" y="1.960749" x="2.548973" stroke-opacity="null" stroke-width="2" fill="#ffffff"/>' +
+  '</g>' +
+  '</svg>'
+  var actorSVG = '<svg width="120" height="120" xmlns="http://www.w3.org/2000/svg">'+
+  '<g>'+
+  '<path id="svg_5" d="m-213.507947,29.895818l0.742506,-0.740012l0.742506,0.740012l-0.371253,0l0,0.743573l-0.742506,0l0,-0.743573l-0.371253,0z" stroke-opacity="null" stroke-width="0" stroke="#ff0000" fill="#ffffff"/>'+
+  '<ellipse stroke="#005fbf" ry="20.956171" rx="22.745112" id="svg_13" cy="24" cx="60" fill-opacity="null" stroke-opacity="null" stroke-width="2" fill="#ffffff"/>'+
+  '<line stroke-linecap="null" stroke-linejoin="null" id="svg_15" y2="88.671607" x2="60" y1="45.09803" x1="60" fill-opacity="null" stroke-opacity="null" stroke-width="2" stroke="#005fbf" fill="none"/>'+
+  '<line stroke="#005fbf" stroke-linecap="null" stroke-linejoin="null" id="svg_16" y2="70" x2="29.607812" y1="46.666658" x1="60" fill-opacity="null" stroke-opacity="null" stroke-width="2" fill="none"/>'+
+  '<line stroke="#005fbf" stroke-linecap="null" stroke-linejoin="null" id="svg_20" y2="70" x2="90" y1="46.666658" x1="60.196065" fill-opacity="null" stroke-opacity="null" stroke-width="2" fill="none"/>'+
+  '<line stroke="#005fbf" stroke-linecap="null" stroke-linejoin="null" id="svg_21" y2="110.78434" x2="29.607812" y1="87.450998" x1="60" fill-opacity="null" stroke-opacity="null" stroke-width="2" fill="none"/>'+
+  '<line stroke="#005fbf" stroke-linecap="null" stroke-linejoin="null" id="svg_22" y2="111.176494" x2="89.607843" y1="87.843152" x1="60.215686" fill-opacity="null" stroke-opacity="null" stroke-width="2" fill="none"/>'+
+  '</g>'+
+  '</svg>'
+  window.addEventListener('load', function(e) {
+    var diagramEditor = new CloocaDiagramEditor.DiagramEditor("main");
+    var toolpallet = diagramEditor.createToolPallet();
+    toolpallet.addItem('select', 'selectIcon')
+    toolpallet.addItem('rect', 'rectIcon')
+    diagramEditor.on('addNode', function() {
+
+    })
+    var node1 = diagramEditor.addNode({
+      bound:{
+        x : 100,
+        y : 100,
+        w : 100,
+        h : 150
+      },
+      shape: {
+          svg: actorSVG,
+          width: 120,
+          height: 120
+      }
+    });
+    node1.setPos(120, 120)
+    var node2 = diagramEditor.addNode({
+      bound:{
+        x : 250,
+        y : 100,
+        w : 100,
+        h : 50
+    }});
+  diagramEditor.addConnection(node1, node2, {/*options*/})
+  node1.updateText('User')
+  node2.updateText('Order\n-----\n+ id:string')
+  });
+</script>
+<div id="main"></div>

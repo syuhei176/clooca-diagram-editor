@@ -22,3 +22,9 @@
   height: 20;
   background: url("./conn-icon.svg");
 }
+
+.editIcon {
+  width: 20;
+  height: 20;
+  background: url("./edit-icon.svg");
+}

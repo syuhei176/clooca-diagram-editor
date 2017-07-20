@@ -17,9 +17,9 @@ export default class Diagram extends EventEmitter {
     return this.base;
   }
 
-  addNode(id, type, bound) {
+  addNode(id, bound, options) {
 
-    var node = new Node(id, this, bound, type);
+    var node = new Node(id, this, bound, options);
     node.on('click', () => {
       this.emit("nodeClicked", {node: node})
     });

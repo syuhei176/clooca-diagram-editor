@@ -61,7 +61,8 @@ export class Selector extends EventEmitter {
 			sw : SVGUtil.createDraggableElement('circle', Object.assign(baseAttrs, {x:0,y:100}) ),
 			se : SVGUtil.createDraggableElement('circle', Object.assign(baseAttrs, {x:100,y:100}) ),
 			remove : SVGUtil.createDraggableElement('g', Object.assign(baseAttrs, {x:120,y:50}) ),
-			conn : SVGUtil.createDraggableElement('g', Object.assign(baseAttrs, {x:146,y:50}) )
+			conn : SVGUtil.createDraggableElement('g', Object.assign(baseAttrs, {x:146,y:50}) ),
+			edit : SVGUtil.createDraggableElement('g', Object.assign(baseAttrs, {x:172,y:50}) )
 		}
 
     {
@@ -88,7 +89,18 @@ export class Selector extends EventEmitter {
       div.classList.add(Style['connIcon'])
       this.cursor.conn.appendChild(foreignObject)
     }
-
+    {
+      const foreignObject = SVGUtil.createElement('foreignObject', {
+        x: 58,
+        y: -40,
+        width: 20,
+        height: 20
+      })
+      const div = document.createElement('div')
+      foreignObject.el.appendChild(div)
+      div.classList.add(Style['editIcon'])
+      this.cursor.edit.appendChild(foreignObject)
+    }
 		for(var key in this.cursor) {
 			this.group.appendChild(this.cursor[key]);
 		}
@@ -138,6 +150,11 @@ export class Selector extends EventEmitter {
 			this.onConn()
 			this.clear();
 		}, onRubberBundStart, onRubberBundEnd);
+		this.cursor["edit"].click(() => {
+			this.onEdit()
+			this.clear();
+		}, start, end);
+
 		this.clear();
 	}
 
@@ -219,6 +236,10 @@ export class Selector extends EventEmitter {
 
   onConn() {
     this.mode = MODE_RUBBERBAND
+  }
+
+  onEdit() {
+    this.target.edit()
   }
 
 }

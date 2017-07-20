@@ -132,6 +132,10 @@ class Element {
     this.el.textContent = text;
   }
 
+  setInnerHTML(html) {
+    this.el.innerHTML = html;
+  }
+
   click(onClick) {
     this.el.addEventListener('click', e => {
       onClick(e);
@@ -175,7 +179,8 @@ class DraggableElement extends Element {
 
 }
 
-const createElement = function (type, options, style) {
+const createElement = function (type, _options, style) {
+  let options = _options || {};
   const el = window.document.createElementNS('http://www.w3.org/2000/svg', type);
   //el.setAttributeNS(null, 'transform', 'translate('+0+','+0+')')
   Object.keys(options).forEach(key => {
@@ -576,9 +581,9 @@ class Diagram extends __WEBPACK_IMPORTED_MODULE_3_events__["EventEmitter"] {
     return this.base;
   }
 
-  addNode(id, type, bound) {
+  addNode(id, bound, options) {
 
-    var node = new __WEBPACK_IMPORTED_MODULE_0__node__["a" /* default */](id, this, bound, type);
+    var node = new __WEBPACK_IMPORTED_MODULE_0__node__["a" /* default */](id, this, bound, options);
     node.on('click', () => {
       this.emit("nodeClicked", { node: node });
     });
@@ -688,7 +693,8 @@ class Selector extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 			sw: __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createDraggableElement('circle', Object.assign(baseAttrs, { x: 0, y: 100 })),
 			se: __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createDraggableElement('circle', Object.assign(baseAttrs, { x: 100, y: 100 })),
 			remove: __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createDraggableElement('g', Object.assign(baseAttrs, { x: 120, y: 50 })),
-			conn: __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createDraggableElement('g', Object.assign(baseAttrs, { x: 146, y: 50 }))
+			conn: __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createDraggableElement('g', Object.assign(baseAttrs, { x: 146, y: 50 })),
+			edit: __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createDraggableElement('g', Object.assign(baseAttrs, { x: 172, y: 50 }))
 		};
 
 		{
@@ -715,7 +721,18 @@ class Selector extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 			div.classList.add(__WEBPACK_IMPORTED_MODULE_2__icon_css___default.a['connIcon']);
 			this.cursor.conn.appendChild(foreignObject);
 		}
-
+		{
+			const foreignObject = __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createElement('foreignObject', {
+				x: 58,
+				y: -40,
+				width: 20,
+				height: 20
+			});
+			const div = document.createElement('div');
+			foreignObject.el.appendChild(div);
+			div.classList.add(__WEBPACK_IMPORTED_MODULE_2__icon_css___default.a['editIcon']);
+			this.cursor.edit.appendChild(foreignObject);
+		}
 		for (var key in this.cursor) {
 			this.group.appendChild(this.cursor[key]);
 		}
@@ -765,6 +782,11 @@ class Selector extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 			this.onConn();
 			this.clear();
 		}, onRubberBundStart, onRubberBundEnd);
+		this.cursor["edit"].click(() => {
+			this.onEdit();
+			this.clear();
+		}, start, end);
+
 		this.clear();
 	}
 
@@ -844,6 +866,10 @@ class Selector extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 
 	onConn() {
 		this.mode = MODE_RUBBERBAND;
+	}
+
+	onEdit() {
+		this.target.edit();
 	}
 
 }
@@ -1394,9 +1420,50 @@ Connection.prototype.refresh = function () {
 
 
 
+class Shape {
+	constructor(options, w, h) {
+		this.options = options || {};
+		this.color = this.options.color || "#fff";
+		if (this.options.svg) {
+			this.el = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('g');
+			this.el.setInnerHTML(this.options.svg);
+		} else {
+			this.el = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('rect', {
+				x: 0,
+				y: 0,
+				width: w,
+				height: h
+			});
+		}
+		this.el.attr({
+			fill: this.color,
+			stroke: "#000",
+			strokeWidth: 1
+		});
+		this.isCustom = !!this.options.svg;
+	}
+
+	getEl() {
+		return this.el;
+	}
+
+	setSize(w, h) {
+		if (this.options.svg) {
+			const ww = w / this.options.width;
+			const hh = h / this.options.height;
+			this.el.transform("scale(" + ww + "," + hh + ")");
+		} else {
+			this.el.attr({
+				width: w,
+				height: h
+			});
+		}
+	}
+}
+
 class Node extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 
-	constructor(id, diagram, bound, type) {
+	constructor(id, diagram, bound, options) {
 		super();
 		var self = this;
 		this.id = id;
@@ -1411,30 +1478,32 @@ class Node extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 			h: bound.h
 		};
 		this.color = "#fff";
-		this.type = type;
+		this.options = options || {};
 		this.connections = [];
-		this.elem = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createDraggableElement('g', {});
-		this.shape = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createDraggableElement('rect', {
+		this.elem = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('g');
+		this.shape = new Shape(this.options.shape, bound.w, bound.h);
+		this.propertyGroup = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('g');
+		this.coll = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createDraggableElement('rect', {
 			x: 0,
 			y: 0,
 			width: this.bound.w,
 			height: this.bound.h,
-			'data-cid': this.id
+			'data-cid': this.id,
+			'visibility': 'hidden',
+			'pointer-events': 'fill'
 		});
-		this.elem.appendChild(this.shape);
+		this.editGroup = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('g');
+		this.elem.appendChild(this.shape.getEl());
+		this.elem.appendChild(this.propertyGroup);
+		this.elem.appendChild(this.coll);
+		this.elem.appendChild(this.editGroup);
 
-		/*
-  if(type == "rect") this.elem = s.rect(0, 0, this.bound.w, this.bound.h);
-  else if(type == "ellipse") this.elem = s.ellipse(this.bound.w/2, this.bound.h/2, this.bound.w/2, this.bound.h/2);
-  else if(type == "rectangle") this.elem = s.rect(0, 0, this.bound.w, this.bound.h, 5, 5);
-  else this.elem = s.ellipse(0, 0, this.bound.w, this.bound.h);
-  */
 		diagram.getGroup().appendChild(this.elem);
 		this.start_pos = {
 			x: 0,
 			y: 0
 		};
-		this.shape.drag((dx, dy, x, y, e) => {
+		this.coll.drag((dx, dy, x, y, e) => {
 			this.setPos(this.start_pos.x + dx, this.start_pos.y + dy);
 			this.emit('move');
 		}, (x, y) => {
@@ -1443,7 +1512,7 @@ class Node extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 		}, e => {
 			diagram.emit('nodeupdate', this);
 		});
-		this.shape.click(() => {
+		this.coll.click(() => {
 			this.emit('click');
 		});
 		this.init();
@@ -1455,11 +1524,6 @@ class Node extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 
 	init(onclick) {
 
-		this.elem.attr({
-			fill: this.color,
-			stroke: "#000",
-			strokeWidth: 1
-		});
 		this.elem.className("node");
 		this.refresh();
 
@@ -1523,36 +1587,47 @@ class Node extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 
 	addProperty() {
 		const newProperty = new __WEBPACK_IMPORTED_MODULE_2__property__["a" /* default */]({
-			node: this
+			node: this,
+			editGroup: this.editGroup
 		});
 		newProperty.updateText("default");
 		newProperty.on('change', e => {
 			this.setH(newProperty.getHeight() + 20);
 		});
 		this.properties.push(newProperty);
-		this.elem.appendChild(newProperty.getEl());
+		this.propertyGroup.appendChild(newProperty.getEl());
+	}
+
+	edit() {
+		this.properties[0].showTextarea();
 	}
 
 	updateText(text) {
 		this.properties[0].updateText(text);
-		this.setH(this.properties[0].getHeight() + 20);
+		if (!this.shape.isCustom) this.setH(this.properties[0].getHeight() + 20);
 	}
 
 	refresh() {
 		this.elem.transform("translate(" + this.bound.x + "," + this.bound.y + ")");
-		if (this.type == "rect" || this.type == "rectangle") {
-			this.shape.attr({
-				width: this.bound.w,
-				height: this.bound.h
-			});
-		} else if (this.type == "ellipse") {
-			this.shape.attr({
-				cx: this.bound.w / 2,
-				cy: this.bound.h / 2,
-				rx: this.bound.w / 2,
-				ry: this.bound.h / 2
-			});
-		} else {}
+		console.error(this.bound);
+		this.shape.setSize(this.bound.w, this.bound.h);
+
+		this.coll.attr({
+			width: this.bound.w,
+			height: this.bound.h
+		});
+		/*
+  if(this.type == "rect" || this.type == "rectangle") {
+  }else if(this.type == "ellipse") {
+  this.shape.attr({
+  cx : this.bound.w/2,
+  cy : this.bound.h/2,
+  rx : this.bound.w/2,
+  ry : this.bound.h/2
+  });
+  }else{
+  }
+  */
 	}
 
 }
@@ -1607,6 +1682,7 @@ class Property extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
     let lines = text.split("\n");
     let elements = lines.map((line, i) => {
       let textElement = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createDraggableElement('text', {
+        "x": 2,
         "y": 20 * i,
         "fill": "#333"
       });
@@ -1626,7 +1702,7 @@ class Property extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
     this.foreignObject = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('foreignObject', {
       width: this.options.node.getWidth(),
       height: this.options.node.getHeight(),
-      y: -20
+      y: 0
       //requiredExtensions: "http://www.w3.org/1999/xhtml"
     });
     const textArea = document.createElement('textarea');
@@ -1637,15 +1713,16 @@ class Property extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
     //textArea.style['height'] = this.options.node.getHeight() + 'px'
 
     this.foreignObject.el.appendChild(textArea);
-    this.gElement2.appendChild(this.foreignObject);
+    this.options.editGroup.appendChild(this.foreignObject);
     textArea.addEventListener('change', () => {
       this.updateText(textArea.value);
-      //this.hideTextarea()
+      this.hideTextarea();
       this.textAreaDisplayed = false;
       this.emit('change', this);
     });
     textArea.addEventListener('blur', () => {
       this.updateText(textArea.value);
+      this.hideTextarea();
       this.textAreaDisplayed = false;
     });
     textArea.addEventListener('keydown', () => {
@@ -1655,7 +1732,8 @@ class Property extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
   }
 
   hideTextarea() {
-    if (this.foreignObject) this.gElement2.removeChild(this.foreignObject);
+    if (this.foreignObject) this.options.editGroup.removeChild(this.foreignObject);
+    this.foreignObject = null;
   }
 
   getHeight() {
@@ -1801,7 +1879,7 @@ class DiagramEditor extends __WEBPACK_IMPORTED_MODULE_2_events__["EventEmitter"]
     var options = _options || {};
     var id = options.id || __WEBPACK_IMPORTED_MODULE_1_uuid___default()();
     var bound = options.bound || { x: 0, y: 0, w: 100, h: 40 };
-    var node = this.diagram.addNode(id, 'rectangle', bound);
+    var node = this.diagram.addNode(id, bound, options);
     this.emit('addNode', { node: node });
     return node;
   }
@@ -1831,14 +1909,15 @@ exports = module.exports = __webpack_require__(12)(undefined);
 
 
 // module
-exports.push([module.i, ".dgF-o1ZUTv_AfRTOpLuNd {\n  width: 40;\n  height: 40;\n  background: url(" + __webpack_require__(18) + ");\n}\n\n\n._1VhS5DDjd6dVoTWmKHTcR0 {\n  width: 40;\n  height: 40;\n  background: url(" + __webpack_require__(16) + ");\n}\n\n._1ylgUu5npeNByBmH2B96uT {\n  width: 20;\n  height: 20;\n  background: url(" + __webpack_require__(17) + ");\n}\n\n.LlWczh3uSWmHSxgUIj4-6 {\n  width: 20;\n  height: 20;\n  background: url(" + __webpack_require__(15) + ");\n}", ""]);
+exports.push([module.i, ".dgF-o1ZUTv_AfRTOpLuNd {\n  width: 40;\n  height: 40;\n  background: url(" + __webpack_require__(18) + ");\n}\n\n\n._1VhS5DDjd6dVoTWmKHTcR0 {\n  width: 40;\n  height: 40;\n  background: url(" + __webpack_require__(16) + ");\n}\n\n._1ylgUu5npeNByBmH2B96uT {\n  width: 20;\n  height: 20;\n  background: url(" + __webpack_require__(17) + ");\n}\n\n.LlWczh3uSWmHSxgUIj4-6 {\n  width: 20;\n  height: 20;\n  background: url(" + __webpack_require__(15) + ");\n}\n\n._3ctP2MM1zBAiHNPmrgwHn9 {\n  width: 20;\n  height: 20;\n  background: url(" + __webpack_require__(21) + ");\n}", ""]);
 
 // exports
 exports.locals = {
 	"selectIcon": "dgF-o1ZUTv_AfRTOpLuNd",
 	"rectIcon": "_1VhS5DDjd6dVoTWmKHTcR0",
 	"removeIcon": "_1ylgUu5npeNByBmH2B96uT",
-	"connIcon": "LlWczh3uSWmHSxgUIj4-6"
+	"connIcon": "LlWczh3uSWmHSxgUIj4-6",
+	"editIcon": "_3ctP2MM1zBAiHNPmrgwHn9"
 };
 
 /***/ }),
@@ -2381,7 +2460,7 @@ module.exports = function (css) {
 /* 15 */
 /***/ (function(module, exports) {
 
-module.exports = "\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E %3Cg%3E %3Cellipse ry='20' rx='20' id='svg_1' cy='20' cx='20' stroke-width='1.5' stroke='%235fbf00' fill='%237fff00'/%3E %3Cellipse ry='93' id='svg_2' cy='93.75' cx='1.75' stroke-width='1.5' stroke='%23000' fill='%23fff'/%3E %3Cpath stroke='%23ff0000' transform='rotate%2890 21.704938888549805,20.405801773071293%29 ' id='svg_4' d='m11.901005,20.38227l9.803934,-9.780397l9.803934,9.780397l-4.901967,0l0,9.827458l-9.803934,0l0,-9.827458l-4.901967,0z' stroke-opacity='null' stroke-width='0' fill='%23ffffff'/%3E %3C/g%3E %3C/svg%3E\""
+module.exports = "\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E %3Cg%3E %3Cellipse ry='20' rx='20' id='svg_1' cy='20' cx='20' stroke-width='1.5' stroke='%235fbf00' fill='%237fff00'/%3E %3Cellipse ry='93' id='svg_2' cy='93.75' cx='1.75' stroke-width='1.5' stroke='%23000' fill='%23fff'/%3E %3Cpath stroke='%23ff0000' transform='rotate%2890 21.704938888549805,20.405801773071293%29 ' id='svg_4' d='m11.901005,20l9.803934,-9.780397l9.803934,9.780397l-4.901967,0l0,9.827458l-9.803934,0l0,-9.827458l-4.901967,0z' stroke-opacity='null' stroke-width='0' fill='%23ffffff'/%3E %3C/g%3E %3C/svg%3E\""
 
 /***/ }),
 /* 16 */
@@ -2466,6 +2545,12 @@ try {
 
 module.exports = g;
 
+
+/***/ }),
+/* 21 */
+/***/ (function(module, exports) {
+
+module.exports = "\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E %3Cg%3E %3Cellipse ry='20' rx='20' id='svg_1' cy='20' cx='20' stroke-width='1.5' stroke='%23005fbf' fill='%23007fff'/%3E %3Cellipse ry='93' id='svg_2' cy='93.75' cx='1.75' stroke-width='1.5' stroke='%23000' fill='%23fff'/%3E %3Cpath id='svg_5' d='m-213.507947,29.895818l0.742506,-0.740012l0.742506,0.740012l-0.371253,0l0,0.743573l-0.742506,0l0,-0.743573l-0.371253,0z' stroke-opacity='null' stroke-width='0' stroke='%23ff0000' fill='%23ffffff'/%3E %3Cpath stroke='%23ff0000' id='svg_7' d='m28.736926,9.700307l-3.135192,-1.73397c-0.791019,-0.437057 -1.833324,-0.226701 -2.331748,0.469492l-1.235756,1.730734l5.997755,3.314778l1.236731,-1.729931c0.496532,-0.697022 0.259556,-1.615021 -0.53179,-2.051104l0,0zm-17.375722,15.419012l5.998082,3.314744l9.77588,-13.693967l-6.000937,-3.31561l-9.773025,13.694832l0.000001,0.000001zm-0.916206,4.211506l-0.132476,3.113482l3.130383,-1.456968l2.909015,-1.351543l-5.786542,-3.199862l-0.120378,2.894892l0,0l-0.000001,-0.000001z' fill-opacity='null' stroke-opacity='null' stroke-width='0' fill='%23ffffff'/%3E %3C/g%3E %3C/svg%3E\""
 
 /***/ })
 /******/ ]);

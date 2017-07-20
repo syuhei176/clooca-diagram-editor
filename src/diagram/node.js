@@ -2,9 +2,50 @@ import {EventEmitter} from 'events'
 import SVGUtil from '../ui/svg-util'
 import Property from './property'
 
+class Shape {
+  constructor(options, w, h) {
+    this.options = options || {}
+		this.color = this.options.color || "#fff";
+    if(this.options.svg) {
+      this.el = SVGUtil.createElement('g')
+      this.el.setInnerHTML(this.options.svg)
+    }else{
+      this.el = SVGUtil.createElement('rect', {
+        x: 0,
+        y: 0,
+        width: w,
+        height: h
+      })
+    }
+		this.el.attr({
+			fill: this.color,
+			stroke: "#000",
+			strokeWidth: 1			
+		});
+    this.isCustom = !!this.options.svg
+  }
+
+  getEl() {
+    return this.el
+  }
+
+  setSize(w, h) {
+    if(this.options.svg) {
+      const ww = w / this.options.width
+      const hh = h / this.options.height
+      this.el.transform("scale("+ww+","+hh+")");
+    }else{
+      this.el.attr({
+        width : w,
+        height : h
+      });
+    }
+  }
+}
+
 export default class Node extends EventEmitter {
 
-	constructor(id, diagram, bound, type) {
+	constructor(id, diagram, bound, options) {
 		super()
 		var self = this;
 		this.id = id;
@@ -19,31 +60,32 @@ export default class Node extends EventEmitter {
 			h : bound.h
 		};
 		this.color = "#fff";
-		this.type = type;
+		this.options = options || {}
 		this.connections = [];
-	  this.elem = SVGUtil.createDraggableElement('g', {
-	  })
-	  this.shape = SVGUtil.createDraggableElement('rect', {
+	  this.elem = SVGUtil.createElement('g')
+    this.shape = new Shape(this.options.shape, bound.w, bound.h)
+	  this.propertyGroup = SVGUtil.createElement('g')
+	  this.coll = SVGUtil.createDraggableElement('rect', {
 	  	x: 0,
 	  	y: 0,
 	  	width: this.bound.w,
 	  	height: this.bound.h,
-      'data-cid': this.id
+      'data-cid': this.id,
+      'visibility': 'hidden',
+      'pointer-events': 'fill'
 	  })
-		this.elem.appendChild(this.shape)
+	  this.editGroup = SVGUtil.createElement('g')
+		this.elem.appendChild(this.shape.getEl())
+		this.elem.appendChild(this.propertyGroup)
+		this.elem.appendChild(this.coll)
+		this.elem.appendChild(this.editGroup)
 
-		/*
-		if(type == "rect") this.elem = s.rect(0, 0, this.bound.w, this.bound.h);
-		else if(type == "ellipse") this.elem = s.ellipse(this.bound.w/2, this.bound.h/2, this.bound.w/2, this.bound.h/2);
-		else if(type == "rectangle") this.elem = s.rect(0, 0, this.bound.w, this.bound.h, 5, 5);
-		else this.elem = s.ellipse(0, 0, this.bound.w, this.bound.h);
-		*/
 		diagram.getGroup().appendChild(this.elem);
 		this.start_pos = {
 			x : 0,
 			y : 0
 		}
-		this.shape.drag((dx, dy, x, y, e)=>{
+		this.coll.drag((dx, dy, x, y, e)=>{
 			this.setPos(this.start_pos.x + dx, this.start_pos.y + dy);
 			this.emit('move')
 		}, (x, y) => {
@@ -52,7 +94,7 @@ export default class Node extends EventEmitter {
 		}, (e) => {
 			diagram.emit('nodeupdate', this);
 		});
-		this.shape.click(() => {
+		this.coll.click(() => {
 			this.emit('click')
 		});
 		this.init();
@@ -64,11 +106,6 @@ export default class Node extends EventEmitter {
 
 	init(onclick) {
 
-		this.elem.attr({
-			fill: this.color,
-			stroke: "#000",
-			strokeWidth: 1			
-		});
 		this.elem.className("node");
 		this.refresh();
 
@@ -132,28 +169,39 @@ export default class Node extends EventEmitter {
 
 	addProperty() {
 		const newProperty = new Property({
-      node: this
+      node: this,
+      editGroup: this.editGroup
     })
 		newProperty.updateText("default")
     newProperty.on('change', (e) => {
       this.setH(newProperty.getHeight() + 20)
     })
 		this.properties.push(newProperty)
-		this.elem.appendChild(newProperty.getEl())
+		this.propertyGroup.appendChild(newProperty.getEl())
 	}
+
+  edit() {
+    this.properties[0].showTextarea()
+  }
 
   updateText(text) {
     this.properties[0].updateText(text)
-    this.setH(this.properties[0].getHeight() + 20)
+    if(!this.shape.isCustom)
+      this.setH(this.properties[0].getHeight() + 20)
   }
 
 	refresh() {
 		this.elem.transform("translate("+this.bound.x+","+this.bound.y+")");
+      console.error(this.bound)
+    this.shape.setSize(this.bound.w, this.bound.h)
+
+    this.coll.attr({
+      width : this.bound.w,
+      height : this.bound.h
+    });
+    /*
 		if(this.type == "rect" || this.type == "rectangle") {
-			this.shape.attr({
-				width : this.bound.w,
-				height : this.bound.h
-			});
+
 		}else if(this.type == "ellipse") {
 			this.shape.attr({
 				cx : this.bound.w/2,
@@ -164,6 +212,7 @@ export default class Node extends EventEmitter {
 		}else{
 
 		}
+    */
 	}
 
 }

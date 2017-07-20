@@ -49,6 +49,10 @@ class Element {
     this.el.textContent = text
   }
 
+  setInnerHTML(html) {
+    this.el.innerHTML = html
+  }
+
   click(onClick) {
     this.el.addEventListener('click', (e) => {
       onClick(e)
@@ -92,7 +96,8 @@ class DraggableElement extends Element {
 
 }
 
-const createElement = function(type, options, style) {
+const createElement = function(type, _options, style) {
+  let options = _options || {}
   const el = window.document.createElementNS('http://www.w3.org/2000/svg', type);
   //el.setAttributeNS(null, 'transform', 'translate('+0+','+0+')')
   Object.keys(options).forEach((key)=>{

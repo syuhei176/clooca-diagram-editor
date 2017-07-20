@@ -41,6 +41,7 @@ export default class Property extends EventEmitter {
     let lines = text.split("\n")
     let elements = lines.map((line, i) => {
       let textElement = SVGUtil.createDraggableElement('text', {
+        "x": 2,
         "y": 20 * i,
         "fill": "#333"
       })
@@ -60,7 +61,7 @@ export default class Property extends EventEmitter {
     this.foreignObject = SVGUtil.createElement('foreignObject', {
       width: this.options.node.getWidth(),
       height: this.options.node.getHeight(),
-      y: -20
+      y: 0
       //requiredExtensions: "http://www.w3.org/1999/xhtml"
     })
     const textArea = document.createElement('textarea')
@@ -71,15 +72,16 @@ export default class Property extends EventEmitter {
     //textArea.style['height'] = this.options.node.getHeight() + 'px'
     
     this.foreignObject.el.appendChild(textArea)
-    this.gElement2.appendChild(this.foreignObject)
+    this.options.editGroup.appendChild(this.foreignObject)
     textArea.addEventListener('change', ()=>{
       this.updateText(textArea.value)
-      //this.hideTextarea()
+      this.hideTextarea()
       this.textAreaDisplayed = false
       this.emit('change', this)
     })
     textArea.addEventListener('blur', ()=>{
       this.updateText(textArea.value)
+      this.hideTextarea()
       this.textAreaDisplayed = false
     })
     textArea.addEventListener('keydown', ()=>{
@@ -90,7 +92,8 @@ export default class Property extends EventEmitter {
 
   hideTextarea() {
     if(this.foreignObject)
-      this.gElement2.removeChild(this.foreignObject)
+      this.options.editGroup.removeChild(this.foreignObject)
+    this.foreignObject = null
   }
 
   getHeight() {

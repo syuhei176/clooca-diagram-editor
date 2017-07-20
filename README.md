@@ -3,7 +3,12 @@ README.md
 
 # Demo
 
-http://syuhei176.github.io/clooca-diagram-editor/dist/
+http://syuhei176.github.io/clooca-diagram-editor/dist/index.html
+
+### Custom Shape
+
+http://syuhei176.github.io/clooca-diagram-editor/dist/custom.html
+
 
 # Example
 

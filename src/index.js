@@ -121,7 +121,7 @@ class DiagramEditor extends EventEmitter {
     var options = _options || {};
     var id = options.id || uuid();
     var bound = options.bound || {x:0,y:0,w:100,h:40};
-    var node = this.diagram.addNode(id, 'rectangle', bound);
+    var node = this.diagram.addNode(id, bound, options);
     this.emit('addNode', {node:node})
     return node;
   }
