@@ -22,7 +22,11 @@ class Shape {
 			stroke: "#000",
 			strokeWidth: 1			
 		});
-    this.isCustom = !!this.options.svg
+    this._isCustom = !!this.options.svg
+  }
+
+  isCustom() {
+    return this._isCustom
   }
 
   getEl() {
@@ -30,7 +34,7 @@ class Shape {
   }
 
   setSize(w, h) {
-    if(this.options.svg) {
+    if(this.isCustom()) {
       const ww = w / this.options.width
       const hh = h / this.options.height
       this.el.transform("scale("+ww+","+hh+")");
@@ -186,7 +190,7 @@ export default class Node extends EventEmitter {
 
   updateText(text) {
     this.properties[0].updateText(text)
-    if(!this.shape.isCustom)
+    if(!this.shape.isCustom())
       this.setH(this.properties[0].getHeight() + 20)
   }
 
