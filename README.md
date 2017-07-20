@@ -1,6 +1,8 @@
 README.md
 =====
 
+Customizable Diagram Editor
+
 # Demo
 
 http://syuhei176.github.io/clooca-diagram-editor/dist/index.html
