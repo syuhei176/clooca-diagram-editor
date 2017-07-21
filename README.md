@@ -5,11 +5,11 @@ Customizable Diagram Editor
 
 # Demo
 
-http://syuhei176.github.io/clooca-diagram-editor/dist/index.html
+https://syuhei176.github.io/clooca-diagram-editor/dist/index.html
 
 ### Custom Shape
 
-http://syuhei176.github.io/clooca-diagram-editor/dist/custom.html
+https://syuhei176.github.io/clooca-diagram-editor/dist/custom.html
 
 
 # Example
