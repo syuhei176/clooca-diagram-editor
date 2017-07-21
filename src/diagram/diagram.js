@@ -40,11 +40,11 @@ export default class Diagram extends EventEmitter {
 
   addConnection(id, start, end) {
 
-    var con = new Connection(id, this.snap, this, start, end);
-    con.onclick(() => {
-      this.connection_selector.setTarget(con);
+    var conn = new Connection(id, this.snap, this, start, end);
+    conn.on('click', () => {
+      this.emit("connClicked", {conn: conn})
     });
-    this.connections[id] = con;
+    this.connections[id] = conn;
 
   }
 

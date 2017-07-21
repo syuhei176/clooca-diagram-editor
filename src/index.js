@@ -29,9 +29,13 @@ class DiagramEditor extends EventEmitter {
     this.addTopGUILayer()
 
     this.diagram.on('nodeClicked', (e) => {
-
       this.selector.setTarget(e.node)
     })
+    this.diagram.on('connClicked', (e) => {
+      
+      this.connection_selector.setTarget(e.conn);
+    })
+
     this.selector.on('rubberbundend', (e) => {
       const start = this.diagram.getNode(e.startId)
       if(e.endId) {
@@ -114,6 +118,7 @@ class DiagramEditor extends EventEmitter {
   addTopGUILayer() {
     this.topGUILayer = SVGUtil.createElement('g', {})
     this.topGUILayer.appendChild(this.selector)
+    this.topGUILayer.appendChild(this.connection_selector)
     this.el.appendChild(this.topGUILayer.getEl())
   }
 

@@ -166,7 +166,6 @@ export class Selector extends EventEmitter {
 	}
 
 	setTarget(node) {
-		console.log('setTarget', node)
 
 		this.group.attr({
 			visibility : "visible"
@@ -272,12 +271,40 @@ export class ConnectionSelector extends EventEmitter {
 		}
 		this.cursor = {
 			start : SVGUtil.createDraggableElement('circle', Object.assign(baseAttrs, {x:50,y:0,r:CursorRange}) ),
-			end : SVGUtil.createDraggableElement('circle', Object.assign(baseAttrs, {x:50,y:100,r:CursorRange}) )
+			end : SVGUtil.createDraggableElement('circle', Object.assign(baseAttrs, {x:50,y:100,r:CursorRange}) ),
+			remove : SVGUtil.createDraggableElement('g', Object.assign(baseAttrs, {x:120,y:50}) ),
+			edit : SVGUtil.createDraggableElement('g', Object.assign(baseAttrs, {x:172,y:50}) )
 		}
+    {
+      const foreignObject = SVGUtil.createElement('foreignObject', {
+        x: 6,
+        y: -40,
+        width: 20,
+        height: 20
+      })
+      const div = document.createElement('div')
+      foreignObject.el.appendChild(div)
+      div.classList.add(Style['removeIcon'])
+      this.cursor.remove.appendChild(foreignObject)
+    }
+    {
+      const foreignObject = SVGUtil.createElement('foreignObject', {
+        x: 58,
+        y: -40,
+        width: 20,
+        height: 20
+      })
+      const div = document.createElement('div')
+      foreignObject.el.appendChild(div)
+      div.classList.add(Style['editIcon'])
+      this.cursor.edit.appendChild(foreignObject)
+    }
+
 		for(var key in this.cursor) {
 			this.group.appendChild(this.cursor[key]);
 		}
 
+    /*
 		this.cursor["start"].drag((dx, dy, x, y, e) => {
 			this.target.setStartPos(this.target_start.x + dx, this.target_start.y + dy);
 			this.refresh();
@@ -286,7 +313,16 @@ export class ConnectionSelector extends EventEmitter {
 			this.target.setEndPos(this.target_end.x + dx, this.target_end.y + dy);
 			this.refresh();
 		}, onstart, onend);
+    */
+		this.cursor["edit"].click(() => {
+			this.onEdit()
+			this.clear();
+		});
 		this.clear();		
+	}
+
+	getEl() {
+		return this.group.getEl()
 	}
 
 	clear() {
@@ -298,12 +334,16 @@ export class ConnectionSelector extends EventEmitter {
 
 	}
 
-	setTarget(connection) {
+  onEdit() {
+    this.target.edit()
+  }
 
+	setTarget(connection) {
+    console.log('setTarget', connection)
 		this.group.attr({
 			visibility : "visible"
 		});
-		if(this.target) this.target.off("onmove");
+		if(this.target) this.target.removeListener("move");
 		this.target = connection;
 		this.target_start = {
 			x : this.target.getStartPos().x,
@@ -314,7 +354,7 @@ export class ConnectionSelector extends EventEmitter {
 			y : this.target.getEndPos().y
 		};
 		this.refresh();
-		this.target.onmove(function() {
+		this.target.on('move', function() {
 			this.refresh();
 		});
 
@@ -323,7 +363,11 @@ export class ConnectionSelector extends EventEmitter {
 	refresh() {
 
 		if(!this.target) return;
-		this.cursor.start.attr({
+    const xx = (this.target.getStartPos().x + this.target.getEndPos().x) / 2
+    const yy = (this.target.getStartPos().y + this.target.getEndPos().y) / 2
+		this.cursor.remove.transform("translate("+(xx-20)+","+yy+")");
+		this.cursor.edit.transform("translate("+(xx-20)+","+yy+")");
+    this.cursor.start.attr({
 			cx : this.target.getStartPos().x,
 			cy : this.target.getStartPos().y
 		});

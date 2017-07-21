@@ -523,6 +523,120 @@ function isUndefined(arg) {
 
 /***/ }),
 /* 2 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events__ = __webpack_require__(1);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_events__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__ = __webpack_require__(0);
+
+
+
+class Property extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
+
+  constructor(options) {
+    super();
+    this.gElement = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createDraggableElement('g', {});
+    this.gElement.transform("translate(0,20)");
+    //this.clearText()
+    this.fontSize = 14;
+    this.options = options;
+  }
+
+  clearText() {
+    if (this.gElement2) this.gElement.removeChild(this.gElement2);
+    this.gElement2 = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createDraggableElement('g', {
+      'font-family': "sans-serif",
+      'font-size': this.fontSize
+    });
+    this.gElement.appendChild(this.gElement2);
+    /*
+    this.textElement = SVGUtil.createDraggableElement('text', {
+      "y": 0,
+      "fill": "#333"
+    })
+    this.gElement2.appendChild(this.textElement)
+    this.textElement.click(() => {
+      console.log('click')
+      this.showTextarea()
+    })
+    */
+  }
+
+  updateText(text) {
+    this.currentText = text;
+    this.clearText();
+    let lines = text.split("\n");
+    let elements = lines.map((line, i) => {
+      let textElement = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createDraggableElement('text', {
+        "x": 2,
+        "y": 20 * i,
+        "fill": "#333"
+      });
+      textElement.setTextContent(line);
+      textElement.click(() => {
+        console.log('click');
+        this.showTextarea();
+      });
+      this.gElement2.appendChild(textElement);
+      return textElement;
+    });
+  }
+
+  showTextarea() {
+    if (this.textAreaDisplayed) return;
+    this.textAreaDisplayed = true;
+    this.foreignObject = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('foreignObject', {
+      width: this.options.node.getWidth(),
+      height: this.options.node.getHeight(),
+      y: 0
+      //requiredExtensions: "http://www.w3.org/1999/xhtml"
+    });
+    const textArea = document.createElement('textarea');
+    textArea.value = this.currentText;
+    textArea.style['font-size'] = this.fontSize;
+    textArea.style['margin-top'] = '0px';
+    textArea.style['width'] = this.options.node.getWidth() + 'px';
+    //textArea.style['height'] = this.options.node.getHeight() + 'px'
+
+    this.foreignObject.el.appendChild(textArea);
+    this.options.editGroup.appendChild(this.foreignObject);
+    textArea.addEventListener('change', () => {
+      this.updateText(textArea.value);
+      this.hideTextarea();
+      this.textAreaDisplayed = false;
+      this.emit('change', this);
+    });
+    textArea.addEventListener('blur', () => {
+      this.updateText(textArea.value);
+      this.hideTextarea();
+      this.textAreaDisplayed = false;
+    });
+    textArea.addEventListener('keydown', () => {
+      textArea.rows = textArea.value.split('\n').length + 1;
+    });
+    textArea.rows = textArea.value.split('\n').length + 1;
+  }
+
+  hideTextarea() {
+    if (this.foreignObject) this.options.editGroup.removeChild(this.foreignObject);
+    this.foreignObject = null;
+  }
+
+  getHeight() {
+    return this.currentText.split("\n").length * 20;
+  }
+
+  getEl() {
+    return this.gElement;
+  }
+
+}
+/* harmony export (immutable) */ __webpack_exports__["a"] = Property;
+
+
+/***/ }),
+/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
@@ -553,12 +667,12 @@ if(false) {
 }
 
 /***/ }),
-/* 3 */
+/* 4 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__node__ = __webpack_require__(8);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__edge__ = __webpack_require__(7);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__node__ = __webpack_require__(9);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__edge__ = __webpack_require__(8);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__ui_svg_util__ = __webpack_require__(0);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_events__ = __webpack_require__(1);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_events___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_3_events__);
@@ -603,11 +717,11 @@ class Diagram extends __WEBPACK_IMPORTED_MODULE_3_events__["EventEmitter"] {
 
   addConnection(id, start, end) {
 
-    var con = new __WEBPACK_IMPORTED_MODULE_1__edge__["a" /* default */](id, this.snap, this, start, end);
-    con.onclick(() => {
-      this.connection_selector.setTarget(con);
+    var conn = new __WEBPACK_IMPORTED_MODULE_1__edge__["a" /* default */](id, this.snap, this, start, end);
+    conn.on('click', () => {
+      this.emit("connClicked", { conn: conn });
     });
-    this.connections[id] = con;
+    this.connections[id] = conn;
   }
 
   updateConnection(id, start, end) {
@@ -625,14 +739,14 @@ class Diagram extends __WEBPACK_IMPORTED_MODULE_3_events__["EventEmitter"] {
 
 
 /***/ }),
-/* 4 */
+/* 5 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events__ = __webpack_require__(1);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_events__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__svg_util__ = __webpack_require__(0);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__icon_css__ = __webpack_require__(2);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__icon_css__ = __webpack_require__(3);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__icon_css___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_2__icon_css__);
 
 
@@ -798,7 +912,6 @@ class Selector extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 	}
 
 	setTarget(node) {
-		console.log('setTarget', node);
 
 		this.group.attr({
 			visibility: "visible"
@@ -901,21 +1014,58 @@ class ConnectionSelector extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmit
 		};
 		this.cursor = {
 			start: __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createDraggableElement('circle', Object.assign(baseAttrs, { x: 50, y: 0, r: CursorRange })),
-			end: __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createDraggableElement('circle', Object.assign(baseAttrs, { x: 50, y: 100, r: CursorRange }))
+			end: __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createDraggableElement('circle', Object.assign(baseAttrs, { x: 50, y: 100, r: CursorRange })),
+			remove: __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createDraggableElement('g', Object.assign(baseAttrs, { x: 120, y: 50 })),
+			edit: __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createDraggableElement('g', Object.assign(baseAttrs, { x: 172, y: 50 }))
 		};
+		{
+			const foreignObject = __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createElement('foreignObject', {
+				x: 6,
+				y: -40,
+				width: 20,
+				height: 20
+			});
+			const div = document.createElement('div');
+			foreignObject.el.appendChild(div);
+			div.classList.add(__WEBPACK_IMPORTED_MODULE_2__icon_css___default.a['removeIcon']);
+			this.cursor.remove.appendChild(foreignObject);
+		}
+		{
+			const foreignObject = __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createElement('foreignObject', {
+				x: 58,
+				y: -40,
+				width: 20,
+				height: 20
+			});
+			const div = document.createElement('div');
+			foreignObject.el.appendChild(div);
+			div.classList.add(__WEBPACK_IMPORTED_MODULE_2__icon_css___default.a['editIcon']);
+			this.cursor.edit.appendChild(foreignObject);
+		}
+
 		for (var key in this.cursor) {
 			this.group.appendChild(this.cursor[key]);
 		}
 
-		this.cursor["start"].drag((dx, dy, x, y, e) => {
-			this.target.setStartPos(this.target_start.x + dx, this.target_start.y + dy);
-			this.refresh();
-		}, onstart, onend);
-		this.cursor["end"].drag((dx, dy, x, y, e) => {
-			this.target.setEndPos(this.target_end.x + dx, this.target_end.y + dy);
-			this.refresh();
-		}, onstart, onend);
+		/*
+  this.cursor["start"].drag((dx, dy, x, y, e) => {
+  this.target.setStartPos(this.target_start.x + dx, this.target_start.y + dy);
+  this.refresh();
+  }, onstart, onend);
+  this.cursor["end"].drag((dx, dy, x, y, e)  => {
+  this.target.setEndPos(this.target_end.x + dx, this.target_end.y + dy);
+  this.refresh();
+  }, onstart, onend);
+  */
+		this.cursor["edit"].click(() => {
+			this.onEdit();
+			this.clear();
+		});
 		this.clear();
+	}
+
+	getEl() {
+		return this.group.getEl();
 	}
 
 	clear() {
@@ -926,12 +1076,16 @@ class ConnectionSelector extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmit
 		});
 	}
 
-	setTarget(connection) {
+	onEdit() {
+		this.target.edit();
+	}
 
+	setTarget(connection) {
+		console.log('setTarget', connection);
 		this.group.attr({
 			visibility: "visible"
 		});
-		if (this.target) this.target.off("onmove");
+		if (this.target) this.target.removeListener("move");
 		this.target = connection;
 		this.target_start = {
 			x: this.target.getStartPos().x,
@@ -942,7 +1096,7 @@ class ConnectionSelector extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmit
 			y: this.target.getEndPos().y
 		};
 		this.refresh();
-		this.target.onmove(function () {
+		this.target.on('move', function () {
 			this.refresh();
 		});
 	}
@@ -950,6 +1104,10 @@ class ConnectionSelector extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmit
 	refresh() {
 
 		if (!this.target) return;
+		const xx = (this.target.getStartPos().x + this.target.getEndPos().x) / 2;
+		const yy = (this.target.getStartPos().y + this.target.getEndPos().y) / 2;
+		this.cursor.remove.transform("translate(" + (xx - 20) + "," + yy + ")");
+		this.cursor.edit.transform("translate(" + (xx - 20) + "," + yy + ")");
 		this.cursor.start.attr({
 			cx: this.target.getStartPos().x,
 			cy: this.target.getStartPos().y
@@ -965,12 +1123,12 @@ class ConnectionSelector extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmit
 
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__svg_util__ = __webpack_require__(0);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__icon_css__ = __webpack_require__(2);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__icon_css__ = __webpack_require__(3);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__icon_css___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1__icon_css__);
 
 
@@ -1051,7 +1209,7 @@ class ToolPalletUI {
 
 
 /***/ }),
-/* 6 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //     uuid.js
@@ -1062,7 +1220,7 @@ class ToolPalletUI {
 // Unique ID creation requires a high quality random # generator.  We feature
 // detect to determine the best RNG source, normalizing to a function that
 // returns 128-bits of randomness, since that's what's usually required
-var _rng = __webpack_require__(19);
+var _rng = __webpack_require__(20);
 
 // Maps for number <-> hex string conversion
 var _byteToHex = [];
@@ -1240,174 +1398,6 @@ module.exports = uuid;
 
 
 /***/ }),
-/* 7 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__ui_svg_util__ = __webpack_require__(0);
-
-
-function Connection(id, s, diagram, start, end) {
-	var self = this;
-	this.id = id;
-	this.start = {};
-	this.end = {};
-	this.points = [{}, {}];
-	this.elem = __WEBPACK_IMPORTED_MODULE_0__ui_svg_util__["a" /* default */].createElement('path', {
-		d: "M0 0L0 0",
-		fill: "none",
-		stroke: "#333",
-		strokeWidth: 4
-	});
-
-	this.coll = __WEBPACK_IMPORTED_MODULE_0__ui_svg_util__["a" /* default */].createDraggableElement('path', {
-		d: "M0 0L0 0",
-		visibility: "hidden",
-		"pointer-events": "stroke",
-		strokeWidth: 20
-	});
-
-	this.coll.className("node");
-
-	diagram.getGroup().appendChild(this.elem);
-	diagram.getGroup().appendChild(this.coll);
-
-	this.setStartPos(start, end);
-	this.setEndPos(start, end);
-
-	start.addConnection(this);
-	end.addConnection(this);
-	start.on('move', () => {
-		this.setStartPos(start, end);
-		this.setEndPos(start, end);
-		this.refresh();
-	});
-	end.on('move', () => {
-		this.setStartPos(start, end);
-		this.setEndPos(start, end);
-		this.refresh();
-	});
-
-	this.base_start = {};
-	this.base_end = {};
-	this.listeners = {
-		onclick: null,
-		onmove: null
-	};
-	this.coll.drag(function (dx, dy, x, y, e) {
-		self.setStartPos(self.base_start.x + dx, self.base_start.y + dy);
-		self.setEndPos(self.base_end.x + dx, self.base_end.y + dy);
-		if (self.listeners.onmove) self.listeners.onmove();
-	}, function (x, y) {
-		self.base_start.x = self.start.x;
-		self.base_start.y = self.start.y;
-		self.base_end.x = self.end.x;
-		self.base_end.y = self.end.y;
-	}, function (e) {
-		diagram.fireOnConUpdate(self);
-	});
-	this.coll.click(function () {
-		if (self.listeners.onclick) self.listeners.onclick();
-	});
-}
-
-Connection.prototype.onclick = function (onclick) {
-	this.listeners.onclick = onclick;
-};
-
-Connection.prototype.onmove = function (onmove) {
-	this.listeners.onmove = onmove;
-};
-
-Connection.prototype.off = function (event) {
-	this.listeners[event] = null;
-};
-
-Connection.prototype.checkRelPos = function (start, end) {
-	let area;
-	if (start.getX() + start.getWidth() < end.getX()) {
-		area = 2;
-	} else if (start.getX() > end.getX() + end.getWidth()) {
-		area = 1;
-	} else {
-		if (start.getY() + start.getHeight() < end.getY()) {
-			area = 4;
-		} else if (start.getY() > end.getY()) {
-			area = 3;
-		} else {
-			area = 3;
-		}
-	}
-	return area;
-};
-
-Connection.prototype.setStartPos = function (start, end) {
-	let area = this.checkRelPos(start, end);
-	if (area == 1) {
-		this.start.x = start.getX();
-		this.start.y = start.getY() + start.getHeight() / 2;
-	} else if (area == 2) {
-		this.start.x = start.getX() + start.getWidth();
-		this.start.y = start.getY() + start.getHeight() / 2;
-	} else if (area == 3) {
-		this.start.x = start.getX() + start.getWidth() / 2;
-		this.start.y = start.getY();
-	} else if (area == 4) {
-		this.start.x = start.getX() + start.getWidth() / 2;
-		this.start.y = start.getY() + start.getHeight();
-	}
-	this.points[0].x = this.start.x;
-	this.points[0].y = this.start.y;
-	this.refresh();
-};
-
-Connection.prototype.setEndPos = function (start, end) {
-	let area = this.checkRelPos(end, start);
-	if (area == 1) {
-		this.end.x = end.getX();
-		this.end.y = end.getY() + end.getHeight() / 2;
-	} else if (area == 2) {
-		this.end.x = end.getX() + end.getWidth();
-		this.end.y = end.getY() + end.getHeight() / 2;
-	} else if (area == 3) {
-		this.end.x = end.getX() + end.getWidth() / 2;
-		this.end.y = end.getY();
-	} else if (area == 4) {
-		this.end.x = end.getX() + end.getWidth() / 2;
-		this.end.y = end.getY() + end.getHeight();
-	}
-	const length = this.points.length;
-	this.points[length - 1].x = this.end.x;
-	this.points[length - 1].y = this.end.y;
-	this.refresh();
-};
-
-Connection.prototype.getStartPos = function () {
-	return this.start;
-};
-
-Connection.prototype.getEndPos = function () {
-	return this.end;
-};
-
-Connection.prototype.refresh = function () {
-	const startPoint = this.points[0];
-	const points = this.points.slice(1);
-	let str = "M" + startPoint.x + ' ' + startPoint.y;
-	points.forEach(p => {
-		str += "L" + p.x + " " + p.y;
-	});
-	this.elem.attr({
-		d: str
-	});
-	this.coll.attr({
-		d: str
-	});
-};
-
-/* harmony default export */ __webpack_exports__["a"] = (Connection);
-
-/***/ }),
 /* 8 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -1415,7 +1405,216 @@ Connection.prototype.refresh = function () {
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events__ = __webpack_require__(1);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_events__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__ = __webpack_require__(0);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__property__ = __webpack_require__(9);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__property__ = __webpack_require__(2);
+
+
+
+
+class Connection extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
+  constructor(id, s, diagram, start, end) {
+    super();
+    this.id = id;
+    this.start = {};
+    this.end = {};
+    this.points = [{}, {}];
+
+    this.group = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('g');
+    this.propertyGroup = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('g');
+    this.editGroup = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('g');
+
+    this.elem = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('path', {
+      d: "M0 0L0 0",
+      fill: "none",
+      stroke: "#333",
+      strokeWidth: 4
+    });
+
+    this.coll = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createDraggableElement('path', {
+      d: "M0 0L0 0",
+      visibility: "hidden",
+      "pointer-events": "stroke",
+      'stroke-width': 20
+    });
+
+    this.coll.className("node");
+
+    this.group.appendChild(this.elem);
+    this.group.appendChild(this.propertyGroup);
+    this.group.appendChild(this.coll);
+    this.group.appendChild(this.editGroup);
+    diagram.getGroup().appendChild(this.group);
+
+    this.setStartPos(start, end);
+    this.setEndPos(start, end);
+
+    start.addConnection(this);
+    end.addConnection(this);
+    start.on('move', () => {
+      this.setStartPos(start, end);
+      this.setEndPos(start, end);
+      this.refresh();
+    });
+    end.on('move', () => {
+      this.setStartPos(start, end);
+      this.setEndPos(start, end);
+      this.refresh();
+    });
+
+    this.base_start = {};
+    this.base_end = {};
+    /*
+    this.coll.drag((dx, dy, x, y, e) => {
+      this.setStartPos(this.base_start.x + dx, this.base_start.y + dy);
+      this.setEndPos(this.base_end.x + dx, this.base_end.y + dy);
+      this.emit('move', {})
+    }, (x, y) => {
+      this.base_start.x = this.start.x;
+      this.base_start.y = this.start.y;
+      this.base_end.x = this.end.x;
+      this.base_end.y = this.end.y;
+    }, (e) => {
+      //diagram.fireOnConUpdate(this);
+    });
+    */
+    this.coll.click(() => {
+      console.log('click', this);
+
+      this.emit('click', this);
+    });
+
+    this.initProperty();
+  }
+
+  checkRelPos(start, end) {
+
+    let area;
+    if (start.getX() + start.getWidth() < end.getX()) {
+      area = 2;
+    } else if (start.getX() > end.getX() + end.getWidth()) {
+      area = 1;
+    } else {
+      if (start.getY() + start.getHeight() < end.getY()) {
+        area = 4;
+      } else if (start.getY() > end.getY()) {
+        area = 3;
+      } else {
+        area = 3;
+      }
+    }
+    return area;
+  }
+
+  setStartPos(start, end) {
+    let area = this.checkRelPos(start, end);
+    if (area == 1) {
+      this.start.x = start.getX();
+      this.start.y = start.getY() + start.getHeight() / 2;
+    } else if (area == 2) {
+      this.start.x = start.getX() + start.getWidth();
+      this.start.y = start.getY() + start.getHeight() / 2;
+    } else if (area == 3) {
+      this.start.x = start.getX() + start.getWidth() / 2;
+      this.start.y = start.getY();
+    } else if (area == 4) {
+      this.start.x = start.getX() + start.getWidth() / 2;
+      this.start.y = start.getY() + start.getHeight();
+    }
+    this.points[0].x = this.start.x;
+    this.points[0].y = this.start.y;
+    this.refresh();
+  }
+
+  setEndPos(start, end) {
+
+    let area = this.checkRelPos(end, start);
+    if (area == 1) {
+      this.end.x = end.getX();
+      this.end.y = end.getY() + end.getHeight() / 2;
+    } else if (area == 2) {
+      this.end.x = end.getX() + end.getWidth();
+      this.end.y = end.getY() + end.getHeight() / 2;
+    } else if (area == 3) {
+      this.end.x = end.getX() + end.getWidth() / 2;
+      this.end.y = end.getY();
+    } else if (area == 4) {
+      this.end.x = end.getX() + end.getWidth() / 2;
+      this.end.y = end.getY() + end.getHeight();
+    }
+    const length = this.points.length;
+    this.points[length - 1].x = this.end.x;
+    this.points[length - 1].y = this.end.y;
+    this.refresh();
+  }
+
+  getStartPos() {
+    return this.start;
+  }
+
+  getEndPos() {
+    return this.end;
+  }
+
+  refresh() {
+
+    const startPoint = this.points[0];
+    const points = this.points.slice(1);
+    let str = "M" + startPoint.x + ' ' + startPoint.y;
+    points.forEach(p => {
+      str += "L" + p.x + " " + p.y;
+    });
+    this.elem.attr({
+      d: str
+    });
+    this.coll.attr({
+      d: str
+    });
+    const textPoint = this.points.reduce((c, acc) => {
+      return {
+        x: c.x + acc.x,
+        y: c.y + acc.y
+      };
+    }, { x: 0, y: 0 });
+    textPoint.x = textPoint.x / this.points.length;
+    textPoint.y = textPoint.y / this.points.length;
+    this.propertyGroup.transform("translate(" + (textPoint.x - 20) + "," + textPoint.y + ")");
+    this.editGroup.transform("translate(" + (textPoint.x - 20) + "," + textPoint.y + ")");
+  }
+
+  getWidth() {
+    return 100;
+  }
+
+  getHeight() {
+    return 100;
+  }
+
+  initProperty() {
+    const newProperty = new __WEBPACK_IMPORTED_MODULE_2__property__["a" /* default */]({
+      node: this,
+      editGroup: this.editGroup
+    });
+    newProperty.updateText("default");
+    this.property = newProperty;
+    this.propertyGroup.appendChild(newProperty.getEl());
+  }
+
+  edit() {
+    console.log("edit");
+    this.property.showTextarea();
+  }
+}
+/* harmony export (immutable) */ __webpack_exports__["a"] = Connection;
+
+
+/***/ }),
+/* 9 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events__ = __webpack_require__(1);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_events__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__ = __webpack_require__(0);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__property__ = __webpack_require__(2);
 
 
 
@@ -1440,7 +1639,11 @@ class Shape {
 			stroke: "#000",
 			strokeWidth: 1
 		});
-		this.isCustom = !!this.options.svg;
+		this._isCustom = !!this.options.svg;
+	}
+
+	isCustom() {
+		return this._isCustom;
 	}
 
 	getEl() {
@@ -1448,7 +1651,7 @@ class Shape {
 	}
 
 	setSize(w, h) {
-		if (this.options.svg) {
+		if (this.isCustom()) {
 			const ww = w / this.options.width;
 			const hh = h / this.options.height;
 			this.el.transform("scale(" + ww + "," + hh + ")");
@@ -1604,12 +1807,11 @@ class Node extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 
 	updateText(text) {
 		this.properties[0].updateText(text);
-		if (!this.shape.isCustom) this.setH(this.properties[0].getHeight() + 20);
+		if (!this.shape.isCustom()) this.setH(this.properties[0].getHeight() + 20);
 	}
 
 	refresh() {
 		this.elem.transform("translate(" + this.bound.x + "," + this.bound.y + ")");
-		console.error(this.bound);
 		this.shape.setSize(this.bound.w, this.bound.h);
 
 		this.coll.attr({
@@ -1635,133 +1837,19 @@ class Node extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 
 
 /***/ }),
-/* 9 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events__ = __webpack_require__(1);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_events__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__ = __webpack_require__(0);
-
-
-
-class Property extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
-
-  constructor(options) {
-    super();
-    this.gElement = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createDraggableElement('g', {});
-    this.gElement.transform("translate(0,20)");
-    //this.clearText()
-    this.fontSize = 14;
-    this.options = options;
-  }
-
-  clearText() {
-    if (this.gElement2) this.gElement.removeChild(this.gElement2);
-    this.gElement2 = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createDraggableElement('g', {
-      'font-family': "sans-serif",
-      'font-size': this.fontSize
-    });
-    this.gElement.appendChild(this.gElement2);
-    /*
-    this.textElement = SVGUtil.createDraggableElement('text', {
-      "y": 0,
-      "fill": "#333"
-    })
-    this.gElement2.appendChild(this.textElement)
-    this.textElement.click(() => {
-      console.log('click')
-      this.showTextarea()
-    })
-    */
-  }
-
-  updateText(text) {
-    this.currentText = text;
-    this.clearText();
-    let lines = text.split("\n");
-    let elements = lines.map((line, i) => {
-      let textElement = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createDraggableElement('text', {
-        "x": 2,
-        "y": 20 * i,
-        "fill": "#333"
-      });
-      textElement.setTextContent(line);
-      textElement.click(() => {
-        console.log('click');
-        this.showTextarea();
-      });
-      this.gElement2.appendChild(textElement);
-      return textElement;
-    });
-  }
-
-  showTextarea() {
-    if (this.textAreaDisplayed) return;
-    this.textAreaDisplayed = true;
-    this.foreignObject = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('foreignObject', {
-      width: this.options.node.getWidth(),
-      height: this.options.node.getHeight(),
-      y: 0
-      //requiredExtensions: "http://www.w3.org/1999/xhtml"
-    });
-    const textArea = document.createElement('textarea');
-    textArea.value = this.currentText;
-    textArea.style['font-size'] = this.fontSize;
-    textArea.style['margin-top'] = '0px';
-    textArea.style['width'] = this.options.node.getWidth() + 'px';
-    //textArea.style['height'] = this.options.node.getHeight() + 'px'
-
-    this.foreignObject.el.appendChild(textArea);
-    this.options.editGroup.appendChild(this.foreignObject);
-    textArea.addEventListener('change', () => {
-      this.updateText(textArea.value);
-      this.hideTextarea();
-      this.textAreaDisplayed = false;
-      this.emit('change', this);
-    });
-    textArea.addEventListener('blur', () => {
-      this.updateText(textArea.value);
-      this.hideTextarea();
-      this.textAreaDisplayed = false;
-    });
-    textArea.addEventListener('keydown', () => {
-      textArea.rows = textArea.value.split('\n').length + 1;
-    });
-    textArea.rows = textArea.value.split('\n').length + 1;
-  }
-
-  hideTextarea() {
-    if (this.foreignObject) this.options.editGroup.removeChild(this.foreignObject);
-    this.foreignObject = null;
-  }
-
-  getHeight() {
-    return this.currentText.split("\n").length * 20;
-  }
-
-  getEl() {
-    return this.gElement;
-  }
-
-}
-/* harmony export (immutable) */ __webpack_exports__["a"] = Property;
-
-
-/***/ }),
 /* 10 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "DiagramEditor", function() { return DiagramEditor; });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__diagram_diagram__ = __webpack_require__(3);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_uuid__ = __webpack_require__(6);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__diagram_diagram__ = __webpack_require__(4);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_uuid__ = __webpack_require__(7);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_uuid___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1_uuid__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_events__ = __webpack_require__(1);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_events___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_2_events__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__ui_toolpallet__ = __webpack_require__(5);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__ui_selector__ = __webpack_require__(4);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__ui_toolpallet__ = __webpack_require__(6);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__ui_selector__ = __webpack_require__(5);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__ui_svg_util__ = __webpack_require__(0);
 
 
@@ -1792,9 +1880,13 @@ class DiagramEditor extends __WEBPACK_IMPORTED_MODULE_2_events__["EventEmitter"]
     this.addTopGUILayer();
 
     this.diagram.on('nodeClicked', e => {
-
       this.selector.setTarget(e.node);
     });
+    this.diagram.on('connClicked', e => {
+
+      this.connection_selector.setTarget(e.conn);
+    });
+
     this.selector.on('rubberbundend', e => {
       const start = this.diagram.getNode(e.startId);
       if (e.endId) {
@@ -1872,6 +1964,7 @@ class DiagramEditor extends __WEBPACK_IMPORTED_MODULE_2_events__["EventEmitter"]
   addTopGUILayer() {
     this.topGUILayer = __WEBPACK_IMPORTED_MODULE_5__ui_svg_util__["a" /* default */].createElement('g', {});
     this.topGUILayer.appendChild(this.selector);
+    this.topGUILayer.appendChild(this.connection_selector);
     this.el.appendChild(this.topGUILayer.getEl());
   }
 
@@ -1909,7 +2002,7 @@ exports = module.exports = __webpack_require__(12)(undefined);
 
 
 // module
-exports.push([module.i, ".dgF-o1ZUTv_AfRTOpLuNd {\n  width: 40;\n  height: 40;\n  background: url(" + __webpack_require__(18) + ");\n}\n\n\n._1VhS5DDjd6dVoTWmKHTcR0 {\n  width: 40;\n  height: 40;\n  background: url(" + __webpack_require__(16) + ");\n}\n\n._1ylgUu5npeNByBmH2B96uT {\n  width: 20;\n  height: 20;\n  background: url(" + __webpack_require__(17) + ");\n}\n\n.LlWczh3uSWmHSxgUIj4-6 {\n  width: 20;\n  height: 20;\n  background: url(" + __webpack_require__(15) + ");\n}\n\n._3ctP2MM1zBAiHNPmrgwHn9 {\n  width: 20;\n  height: 20;\n  background: url(" + __webpack_require__(21) + ");\n}", ""]);
+exports.push([module.i, ".dgF-o1ZUTv_AfRTOpLuNd {\n  width: 40;\n  height: 40;\n  background: url(" + __webpack_require__(19) + ");\n}\n\n\n._1VhS5DDjd6dVoTWmKHTcR0 {\n  width: 40;\n  height: 40;\n  background: url(" + __webpack_require__(17) + ");\n}\n\n._1ylgUu5npeNByBmH2B96uT {\n  width: 20;\n  height: 20;\n  background: url(" + __webpack_require__(18) + ");\n}\n\n.LlWczh3uSWmHSxgUIj4-6 {\n  width: 20;\n  height: 20;\n  background: url(" + __webpack_require__(15) + ");\n}\n\n._3ctP2MM1zBAiHNPmrgwHn9 {\n  width: 20;\n  height: 20;\n  background: url(" + __webpack_require__(16) + ");\n}", ""]);
 
 // exports
 exports.locals = {
@@ -2466,22 +2559,28 @@ module.exports = "\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 
 /* 16 */
 /***/ (function(module, exports) {
 
-module.exports = "\"data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E %3Cg%3E %3Crect id='svg_1' height='48' width='56' y='6' x='2' stroke-width='1.5' stroke='%23000' fill='%23fff'/%3E %3C/g%3E %3C/svg%3E\""
+module.exports = "\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E %3Cg%3E %3Cellipse ry='20' rx='20' id='svg_1' cy='20' cx='20' stroke-width='1.5' stroke='%23005fbf' fill='%23007fff'/%3E %3Cellipse ry='93' id='svg_2' cy='93.75' cx='1.75' stroke-width='1.5' stroke='%23000' fill='%23fff'/%3E %3Cpath id='svg_5' d='m-213.507947,29.895818l0.742506,-0.740012l0.742506,0.740012l-0.371253,0l0,0.743573l-0.742506,0l0,-0.743573l-0.371253,0z' stroke-opacity='null' stroke-width='0' stroke='%23ff0000' fill='%23ffffff'/%3E %3Cpath stroke='%23ff0000' id='svg_7' d='m28.736926,9.700307l-3.135192,-1.73397c-0.791019,-0.437057 -1.833324,-0.226701 -2.331748,0.469492l-1.235756,1.730734l5.997755,3.314778l1.236731,-1.729931c0.496532,-0.697022 0.259556,-1.615021 -0.53179,-2.051104l0,0zm-17.375722,15.419012l5.998082,3.314744l9.77588,-13.693967l-6.000937,-3.31561l-9.773025,13.694832l0.000001,0.000001zm-0.916206,4.211506l-0.132476,3.113482l3.130383,-1.456968l2.909015,-1.351543l-5.786542,-3.199862l-0.120378,2.894892l0,0l-0.000001,-0.000001z' fill-opacity='null' stroke-opacity='null' stroke-width='0' fill='%23ffffff'/%3E %3C/g%3E %3C/svg%3E\""
 
 /***/ }),
 /* 17 */
 /***/ (function(module, exports) {
 
-module.exports = "\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E %3Cg%3E %3Cellipse ry='20' rx='20' id='svg_1' cy='20' cx='20' stroke-width='1.5' stroke='%23ff0000' fill='%23ff5656'/%3E %3Cellipse ry='93' id='svg_2' cy='93.75' cx='1.75' stroke-width='1.5' stroke='%23000' fill='%23fff'/%3E %3Cpath stroke='%23ff0000' id='svg_3' d='m7.914208,14.126632l5.514531,-6.039724l5.858,6.415853l5.858,-6.415853l5.514582,6.039724l-5.858002,6.415905l5.858002,6.415905l-5.514582,6.039781l-5.858,-6.415907l-5.858,6.415907l-5.514531,-6.039781l5.857952,-6.415905l-5.857952,-6.415905z' stroke-width='0' fill='%23ffffff'/%3E %3C/g%3E %3C/svg%3E\""
+module.exports = "\"data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E %3Cg%3E %3Crect id='svg_1' height='48' width='56' y='6' x='2' stroke-width='1.5' stroke='%23000' fill='%23fff'/%3E %3C/g%3E %3C/svg%3E\""
 
 /***/ }),
 /* 18 */
 /***/ (function(module, exports) {
 
-module.exports = "\"data:image/svg+xml,%3Csvg width='40' height='40' viewBox='2 2 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg%3E%3Cpath stroke='%23000' transform='rotate%28-40.575660705566406 32.45265197753906,33.954856872558594%29' id='svg_1' d='m22.055768,33.904453l10.396884,-20.949598l10.396884,20.949598l-5.198442,0l0,21.050403l-10.396883,0l0,-21.050403l-5.198442,0z' stroke-width='1.5' fill='%23fff'/%3E%3C/g%3E%3C/svg%3E\""
+module.exports = "\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E %3Cg%3E %3Cellipse ry='20' rx='20' id='svg_1' cy='20' cx='20' stroke-width='1.5' stroke='%23ff0000' fill='%23ff5656'/%3E %3Cellipse ry='93' id='svg_2' cy='93.75' cx='1.75' stroke-width='1.5' stroke='%23000' fill='%23fff'/%3E %3Cpath stroke='%23ff0000' id='svg_3' d='m7.914208,14.126632l5.514531,-6.039724l5.858,6.415853l5.858,-6.415853l5.514582,6.039724l-5.858002,6.415905l5.858002,6.415905l-5.514582,6.039781l-5.858,-6.415907l-5.858,6.415907l-5.514531,-6.039781l5.857952,-6.415905l-5.857952,-6.415905z' stroke-width='0' fill='%23ffffff'/%3E %3C/g%3E %3C/svg%3E\""
 
 /***/ }),
 /* 19 */
+/***/ (function(module, exports) {
+
+module.exports = "\"data:image/svg+xml,%3Csvg width='40' height='40' viewBox='2 2 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg%3E%3Cpath stroke='%23000' transform='rotate%28-40.575660705566406 32.45265197753906,33.954856872558594%29' id='svg_1' d='m22.055768,33.904453l10.396884,-20.949598l10.396884,20.949598l-5.198442,0l0,21.050403l-10.396883,0l0,-21.050403l-5.198442,0z' stroke-width='1.5' fill='%23fff'/%3E%3C/g%3E%3C/svg%3E\""
+
+/***/ }),
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global) {
@@ -2517,10 +2616,10 @@ if (!rng) {
 module.exports = rng;
 
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(20)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(21)))
 
 /***/ }),
-/* 20 */
+/* 21 */
 /***/ (function(module, exports) {
 
 var g;
@@ -2545,12 +2644,6 @@ try {
 
 module.exports = g;
 
-
-/***/ }),
-/* 21 */
-/***/ (function(module, exports) {
-
-module.exports = "\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E %3Cg%3E %3Cellipse ry='20' rx='20' id='svg_1' cy='20' cx='20' stroke-width='1.5' stroke='%23005fbf' fill='%23007fff'/%3E %3Cellipse ry='93' id='svg_2' cy='93.75' cx='1.75' stroke-width='1.5' stroke='%23000' fill='%23fff'/%3E %3Cpath id='svg_5' d='m-213.507947,29.895818l0.742506,-0.740012l0.742506,0.740012l-0.371253,0l0,0.743573l-0.742506,0l0,-0.743573l-0.371253,0z' stroke-opacity='null' stroke-width='0' stroke='%23ff0000' fill='%23ffffff'/%3E %3Cpath stroke='%23ff0000' id='svg_7' d='m28.736926,9.700307l-3.135192,-1.73397c-0.791019,-0.437057 -1.833324,-0.226701 -2.331748,0.469492l-1.235756,1.730734l5.997755,3.314778l1.236731,-1.729931c0.496532,-0.697022 0.259556,-1.615021 -0.53179,-2.051104l0,0zm-17.375722,15.419012l5.998082,3.314744l9.77588,-13.693967l-6.000937,-3.31561l-9.773025,13.694832l0.000001,0.000001zm-0.916206,4.211506l-0.132476,3.113482l3.130383,-1.456968l2.909015,-1.351543l-5.786542,-3.199862l-0.120378,2.894892l0,0l-0.000001,-0.000001z' fill-opacity='null' stroke-opacity='null' stroke-width='0' fill='%23ffffff'/%3E %3C/g%3E %3C/svg%3E\""
 
 /***/ })
 /******/ ]);
