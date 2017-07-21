@@ -99,6 +99,7 @@ class DiagramEditor extends EventEmitter {
     });
     this.on('click', (e) => {
       let toolName = this.toolpallet.getSelectedToolName()
+      let shape = this.toolpallet.getSelectedShape()
       if(toolName == "select") {
 
       }else{
@@ -108,7 +109,8 @@ class DiagramEditor extends EventEmitter {
             y: e.y,
             w: 100,
             h: 100
-          }
+          },
+          shape: shape
         });
       }
     })

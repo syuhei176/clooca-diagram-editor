@@ -1,3 +1,8 @@
+<style>
+  .actorIcon {
+    height: 20px;
+  }
+</style>
 <script src="diagram-editor.js"></script>
 <script>
 
@@ -29,6 +34,12 @@
     var toolpallet = diagramEditor.createToolPallet();
     toolpallet.addItem('select', 'selectIcon')
     toolpallet.addItem('rect', 'rectIcon')
+    toolpallet.addItem('actor', 'actorIcon', {
+      svg: actorSVG,
+      width: 120,
+      height: 120
+    })
+    
     diagramEditor.on('addNode', function() {
 
     })
@@ -48,8 +59,8 @@
     node1.setPos(120, 120)
     var node2 = diagramEditor.addNode({
       bound:{
-        x : 250,
-        y : 100,
+        x : 300,
+        y : 120,
         w : 100,
         h : 50
     }});

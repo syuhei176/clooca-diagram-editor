@@ -1154,21 +1154,48 @@ class ToolPalletUI {
     this.items = [];
   }
 
-  addItem(name, className) {
+  addItem(name, className, shape) {
     const group = __WEBPACK_IMPORTED_MODULE_0__svg_util__["a" /* default */].createElement('g', {});
-    const rect = __WEBPACK_IMPORTED_MODULE_0__svg_util__["a" /* default */].createElement('foreignObject', {
+    const rect = __WEBPACK_IMPORTED_MODULE_0__svg_util__["a" /* default */].createElement('rect', {
       x: 0,
       y: 20,
-      width: 60,
-      height: 60
-      //stroke: '#000',
-      //fill: `url(${selectIcon})`
-      //opacity: 0,
-      //"background-image": `url(${selectIcon})`
+      width: 40,
+      height: 40,
+      fill: '#555',
+      opacity: 0.5,
+      'stroke-width': 2
     });
-    const div = document.createElement('div');
-    rect.el.appendChild(div);
-    div.classList.add(__WEBPACK_IMPORTED_MODULE_1__icon_css___default.a[className || 'selectIcon']);
+    group.appendChild(rect);
+
+    if (shape) {
+      const inner = __WEBPACK_IMPORTED_MODULE_0__svg_util__["a" /* default */].createElement('g', {});
+      group.appendChild(inner);
+      inner.setInnerHTML(shape.svg);
+      inner.transform('scale(' + 40 / 120 + ',' + 40 / 120 + ')');
+    } else {
+      const foreignObject = __WEBPACK_IMPORTED_MODULE_0__svg_util__["a" /* default */].createElement('foreignObject', {
+        x: 0,
+        y: 20,
+        width: 40,
+        height: 40
+        //stroke: '#000',
+        //fill: `url(${selectIcon})`
+        //opacity: 0,
+        //"background-image": `url(${selectIcon})`
+      });
+      const div = document.createElement('div');
+      foreignObject.el.appendChild(div);
+      div.classList.add(__WEBPACK_IMPORTED_MODULE_1__icon_css___default.a[className || 'selectIcon']);
+      group.appendChild(foreignObject);
+    }
+
+    group.click(() => {
+      this.selectedToolName = name;
+      this.selectedShape = shape;
+      this._select(rect);
+    });
+    this.items.push(rect);
+    this._select(rect);
     /*
     const text = SVGUtil.createElement('text', {
       x: 0,
@@ -1178,27 +1205,28 @@ class ToolPalletUI {
     text.el.textContent = name
     */
     group.transform('translate(' + this.items.length * 42 + ',0)');
-    group.appendChild(rect);
     //group.appendChild(text)
     this.el.appendChild(group);
-    rect.click(() => {
-      this.selectedToolName = name;
-      this._select(div);
-    });
     this.selectedToolName = name;
-    this.items.push(div);
-    this._select(div);
   }
 
   _select(target) {
     this.items.forEach(item => {
-      item.style['border'] = 'solid 1px #333';
+      item.attr({
+        stroke: '#333'
+      });
     });
-    target.style['border'] = 'solid 2px #55e';
+    target.attr({
+      stroke: '#55e'
+    });
   }
 
   getSelectedToolName() {
     return this.selectedToolName;
+  }
+
+  getSelectedShape() {
+    return this.selectedShape;
   }
 
   getEl() {
@@ -1948,6 +1976,7 @@ class DiagramEditor extends __WEBPACK_IMPORTED_MODULE_2_events__["EventEmitter"]
     });
     this.on('click', e => {
       let toolName = this.toolpallet.getSelectedToolName();
+      let shape = this.toolpallet.getSelectedShape();
       if (toolName == "select") {} else {
         this.addNode({
           bound: {
@@ -1955,7 +1984,8 @@ class DiagramEditor extends __WEBPACK_IMPORTED_MODULE_2_events__["EventEmitter"]
             y: e.y,
             w: 100,
             h: 100
-          }
+          },
+          shape: shape
         });
       }
     });
