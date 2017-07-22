@@ -62,36 +62,48 @@ class Element {
 
 class DraggableElement extends Element {
 
+  mouseMoveHandler(onDragging, e) {
+    if(e.changedTouches && e.changedTouches.length > 0) {
+      e = e.changedTouches[0]
+    }
+    const x = e.clientX
+    const y = e.clientY
+    if(this.isDragging) {
+      const transform = this.el.getAttributeNS(null, 'transform')
+      onDragging(x - this.draggingX, y - this.draggingY, x, y, e)
+    }
+  }
+
+  mouseDownHandler(onDragging, onStart, onEnd, e) {
+    if(e.changedTouches && e.changedTouches.length > 0) {
+      e = e.changedTouches[0]
+    }
+    this.isDragging = true
+    this.draggingX = e.clientX
+    this.draggingY = e.clientY
+    onStart(this.draggingX, this.draggingY)
+    window.addEventListener('mousemove', this.mouseMoveHandler.bind(this, onDragging), false)
+    window.addEventListener('touchmove', this.mouseMoveHandler.bind(this, onDragging), false)
+    window.addEventListener('mouseup', this.mouseUpHandler.bind(this, onDragging, onEnd), false)
+    window.addEventListener('touchend', this.mouseUpHandler.bind(this, onDragging, onEnd), false)
+  }
+
+  mouseUpHandler(onDragging, onEnd, e) {
+    if(this.isDragging) {
+      this.isDragging = false
+      onEnd(e)
+      window.removeEventListener('mousemove', this.mouseMoveHandler.bind(this, onDragging), false)
+      window.removeEventListener('touchmove', this.mouseMoveHandler.bind(this, onDragging), false)
+      window.removeEventListener('mouseup', this.mouseUpHandler.bind(this, onEnd), false)
+      window.removeEventListener('touchend', this.mouseUpHandler.bind(this, onEnd), false)
+    }
+  }
+
   drag(onDragging, onStart, onEnd) {
     //dammy dragging elementが必要？
-    window.addEventListener('mousemove', (e) => {
-      const x = e.clientX
-      const y = e.clientY
-      if(this.isDragging) {
-        const transform = this.el.getAttributeNS(null, 'transform')
-        onDragging(x - this.draggingX, y - this.draggingY, x, y, e)
-      }
-    }, false)
-    /*
-    this.el.addEventListener('mouseout', (e) => {
-      if(this.isDragging) {
-        this.isDragging = false
-        onEnd()
-      }
-    })
-    */
-    window.addEventListener('mouseup', (e) => {
-      if(this.isDragging) {
-        this.isDragging = false
-        onEnd(e)
-      }
-    }, false)
-    this.el.addEventListener('mousedown', (e) => {
-      this.isDragging = true
-      this.draggingX = e.clientX
-      this.draggingY = e.clientY
-      onStart(this.draggingX, this.draggingY)
-    }, false)
+    this.el.addEventListener('mousedown', this.mouseDownHandler.bind(this, onDragging, onStart, onEnd), false)
+    this.el.addEventListener('touchstart', this.mouseDownHandler.bind(this, onDragging, onStart, onEnd), false)
+
   }
 
 }
