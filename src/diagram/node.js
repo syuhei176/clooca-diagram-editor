@@ -218,5 +218,13 @@ export default class Node extends EventEmitter {
     */
 	}
 
+	toJson() {
+    var properties = {}
+    for(var key in this.properties) {
+      properties[key] = this.properties[key].toJson()
+    }
+    return properties
+	}
+	
 }
 

@@ -104,4 +104,8 @@ export default class Property extends EventEmitter {
     return this.gElement
   }
 
+  toJson() {
+    return this.currentText
+  }
+  
 }

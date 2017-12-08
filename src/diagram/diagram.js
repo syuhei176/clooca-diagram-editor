@@ -57,5 +57,13 @@ export default class Diagram extends EventEmitter {
   getNode(id) {
     return this.nodes[id]
   }
-  
+
+  toJson() {
+    var nodes = {}
+    for(var key in this.nodes) {
+      nodes[key] = this.nodes[key].toJson()
+    }
+    return nodes
+  }
+
 }

@@ -39,9 +39,11 @@ class DiagramEditor extends EventEmitter {
     this.selector.on('rubberbundend', (e) => {
       const start = this.diagram.getNode(e.startId)
       if(e.endId) {
+        // ノードに繋げる
         const end = this.diagram.getNode(e.endId)
         this.addConnection(start, end, {})
       }else{
+        // 新しくノードを作成して、繋げる
         const newNode = this.addNode({
           bound: {
             x: e.event.x,
@@ -51,6 +53,34 @@ class DiagramEditor extends EventEmitter {
           }
         });
         this.addConnection(start, newNode, {})
+      }
+    })
+
+
+    this.selector.on("changed", (node) => {
+      this.emit('nodeupdate', node)
+    });
+    this.selector.on("removed", function(node) {
+      this.emit('noderemove', node)
+    });
+    this.connection_selector.on("changed", function(con) {
+      this.emit('conupdate', con)
+    });
+    this.on('click', (e) => {
+      let toolName = this.toolpallet.getSelectedToolName()
+      let shape = this.toolpallet.getSelectedShape()
+      if(toolName == "select") {
+
+      }else{
+        this.addNode({
+          bound: {
+            x: e.x,
+            y: e.y,
+            w: 100,
+            h: 100
+          },
+          shape: shape
+        });
       }
     })
 
@@ -88,34 +118,8 @@ class DiagramEditor extends EventEmitter {
     }, false)
     this.el.appendChild(layer)
 
-    this.selector.on("changed", (node) => {
-      this.emit('nodeupdate', node)
-    });
-    this.selector.on("removed", function(node) {
-      this.emit('noderemove', node)
-    });
-    this.connection_selector.on("changed", function(con) {
-      this.emit('conupdate', con)
-    });
-    this.on('click', (e) => {
-      let toolName = this.toolpallet.getSelectedToolName()
-      let shape = this.toolpallet.getSelectedShape()
-      if(toolName == "select") {
-
-      }else{
-        this.addNode({
-          bound: {
-            x: e.x,
-            y: e.y,
-            w: 100,
-            h: 100
-          },
-          shape: shape
-        });
-      }
-    })
-
   }
+
 
   addTopGUILayer() {
     this.topGUILayer = SVGUtil.createElement('g', {})

@@ -5,7 +5,7 @@
   "author": {
     "name": "Shuhei Hiya"
   },
-  "main": "./lib/index.js",
+  "main": "./dist/diagram-editor.js",
   "scripts": {
     "start": "node app",
     "build": "webpack",
