@@ -7,7 +7,7 @@ export default class ToolPalletUI {
       transform: 'translate('+0+','+0+')',
 
     })
-    const rect = SVGUtil.createElement('rect', {
+    this.wrapper = SVGUtil.createElement('rect', {
       x: 0,
       y: 0,
       width: 240,
@@ -17,7 +17,7 @@ export default class ToolPalletUI {
     }, {
       'stroke-width': 1
     })
-    this.el.appendChild(rect)
+    this.el.appendChild(this.wrapper)
     this.length = 0
     this.items = []
   }
@@ -26,9 +26,9 @@ export default class ToolPalletUI {
     const group = SVGUtil.createElement('g', {})
     const rect = SVGUtil.createElement('rect', {
       x: 0,
-      y: 20,
-      width: 40,
-      height: 40,
+      y: 10,
+      width: 60,
+      height: 60,
       fill: '#555',
       opacity: 0.5,
       'stroke-width': 2
@@ -72,19 +72,28 @@ export default class ToolPalletUI {
     })
     text.el.textContent = name
     */
-    group.transform('translate('+(this.items.length*42)+',0)')
+    group.transform('translate('+ (this.getWidth() - 64) +',0)')
+    this.wrapper.setAttr({
+      'width': this.getWidth()
+    })
     //group.appendChild(text)
     this.el.appendChild(group)
     this.selectedToolName = name
   }
 
+  getWidth() {
+    return this.items.length*62 + 6;
+  }
+
   _select(target) {
     this.items.forEach((item) => {
       item.attr({
+        fill: '#555',
         stroke: '#333'
       })
     })
     target.attr({
+      fill: '#424242',
       stroke: '#55e'
     })
   }
