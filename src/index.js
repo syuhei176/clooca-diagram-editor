@@ -2,6 +2,7 @@ import Diagram from './diagram/diagram'
 import uuid from 'uuid'
 import {EventEmitter} from 'events'
 import ToolPallet from './ui/toolpallet'
+import ExplorerUI from './ui/explorer'
 import {Selector, ConnectionSelector} from './ui/selector'
 import SVGUtil from './ui/svg-util'
 
@@ -25,16 +26,7 @@ class DiagramEditor extends EventEmitter {
     this.selector = new Selector();
     this.connection_selector = new ConnectionSelector();
     this.addGUILayer()
-    this.diagram = new Diagram(this.el);
-    this.addTopGUILayer()
-
-    this.diagram.on('nodeClicked', (e) => {
-      this.selector.setTarget(e.node)
-    })
-    this.diagram.on('connClicked', (e) => {
-      
-      this.connection_selector.setTarget(e.conn);
-    })
+    this.loadDiagram({})
 
     this.selector.on('rubberbundend', (e) => {
       const start = this.diagram.getNode(e.startId)
@@ -55,7 +47,6 @@ class DiagramEditor extends EventEmitter {
         this.addConnection(start, newNode, {})
       }
     })
-
 
     this.selector.on("changed", (node) => {
       this.emit('nodeupdate', node)
@@ -107,7 +98,6 @@ class DiagramEditor extends EventEmitter {
 
     layer.appendChild(layerClicker)
     layerClicker.addEventListener('click', (e)=>{
-      console.log(e)
       this.emit('click', {
         x: e.clientX,
         y: e.clientY
@@ -122,10 +112,52 @@ class DiagramEditor extends EventEmitter {
 
 
   addTopGUILayer() {
+    if(this.topGUILayer)
+      this.el.removeChild(this.topGUILayer.getEl())
     this.topGUILayer = SVGUtil.createElement('g', {})
     this.topGUILayer.appendChild(this.selector)
     this.topGUILayer.appendChild(this.connection_selector)
     this.el.appendChild(this.topGUILayer.getEl())
+  }
+
+  load(d) {
+    this.loadDiagram(d)
+  }
+
+  loadDiagram(d) {
+    if(this.diagram) {
+      this.diagram.removeSelf(this.el)
+    }
+    this.diagram = new Diagram(this.el);
+    this.addTopGUILayer()
+    this.diagram.on('nodeClicked', (e) => {
+      this.selector.setTarget(e.node)
+    })
+    this.diagram.on('connClicked', (e) => {
+      this.connection_selector.setTarget(e.conn);
+    })
+    if(d.data) {
+      d.data.nodes.forEach((n) => {
+        this.diagram.addNode(n.id, n.bound, n.options);
+      })
+    }else{
+      d.data = {
+        nodes: []
+      }
+    }
+    this.currentDiagramData = d;
+  }
+
+  serializeDiagram() {
+    let nodes = Object.keys(this.diagram.nodes).map((id) => {
+      return {
+        id: id,
+        bound: this.diagram.nodes[id].bound
+      }
+    })
+    return {
+      nodes: nodes
+    }
   }
 
   addNode(_options) {
@@ -134,6 +166,8 @@ class DiagramEditor extends EventEmitter {
     var bound = options.bound || {x:0,y:0,w:100,h:40};
     var node = this.diagram.addNode(id, bound, options);
     this.emit('addNode', {node:node})
+
+    this.currentDiagramData.data = this.serializeDiagram()
     return node;
   }
 
@@ -143,12 +177,19 @@ class DiagramEditor extends EventEmitter {
     this.diagram.addConnection(id, src, target)
   }
 
-  createToolPallet(toolpallet) {
+  createToolPallet() {
     this.toolpallet = new ToolPallet()
     this.el.appendChild(this.toolpallet.getEl());
     //this.toolpallet.onSelect()
     return this.toolpallet;
   }
+
+  createExplorer() {
+    this.explorer = new ExplorerUI()
+    this.el.appendChild(this.explorer.getEl());
+    return this.explorer;
+  }
+
 }
 
 export {DiagramEditor}

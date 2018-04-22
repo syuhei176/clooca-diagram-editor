@@ -13,6 +13,10 @@ export default class Diagram extends EventEmitter {
     this.connections = {};
   }
 
+  removeSelf(rootElement) {
+    rootElement.removeChild(this.base.getEl())
+  }
+
   getGroup() {
     return this.base;
   }
