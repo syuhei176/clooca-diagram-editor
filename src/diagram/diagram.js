@@ -49,7 +49,8 @@ export default class Diagram extends EventEmitter {
       this.emit("connClicked", {conn: conn})
     });
     this.connections[id] = conn;
-
+    return conn
+    
   }
 
   updateConnection(id, start, end) {
@@ -63,11 +64,17 @@ export default class Diagram extends EventEmitter {
   }
 
   toJson() {
-    var nodes = {}
-    for(var key in this.nodes) {
-      nodes[key] = this.nodes[key].toJson()
+    let nodes = Object.keys(this.nodes).map((id) => {
+      return this.nodes[id].toJson()
+    })
+    let edges = Object.keys(this.connections).map((id) => {
+      const edge = this.connections[id]
+      return edge.toJson()
+    })
+    return {
+      nodes: nodes,
+      edges: edges
     }
-    return nodes
   }
 
 }

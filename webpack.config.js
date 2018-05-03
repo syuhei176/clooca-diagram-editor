@@ -3,12 +3,12 @@ const path = require('path');
 
 module.exports = {
     entry: {
-        CloocaDiagramEditor: './src/index.js'
+        Clooca: './src/index.js'
     },
     output: {
         path: path.join(__dirname, 'dist'),
         filename: 'diagram-editor.js',
-        library: "CloocaDiagramEditor",
+        library: "Clooca",
         libraryTarget: 'umd',
         umdNamedDefine: true
     },

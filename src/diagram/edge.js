@@ -9,6 +9,7 @@ export default class Connection extends EventEmitter {
     this.start = {};
     this.end = {};
     this.points = [{}, {}]
+    this.properties = []
 
 	  this.group = SVGUtil.createElement('g')
 	  this.propertyGroup = SVGUtil.createElement('g')
@@ -77,6 +78,12 @@ export default class Connection extends EventEmitter {
 
     this.initProperty()
 
+    this.startNode = start;
+    this.endNode = end;
+  }
+
+  getId() {
+    return this.id
   }
 
   checkRelPos(start, end) {
@@ -192,11 +199,30 @@ export default class Connection extends EventEmitter {
     })
 		newProperty.updateText("default")
 		this.property = newProperty
+		this.properties.push(newProperty)
 		this.propertyGroup.appendChild(newProperty.getEl())
 	}
+
+  updateText(text) {
+    this.properties[0].updateText(text)
+  }
 
   edit() {
     console.log("edit")
     this.property.showTextarea()
   }
+
+	toJson() {
+    var properties = {}
+    for(var key in this.properties) {
+      properties[key] = this.properties[key].toJson()
+    }
+    return {
+      id: this.getId(),
+      start: this.startNode.getId(),
+      end: this.endNode.getId(),
+      properties: properties
+    }
+	}
+
 }

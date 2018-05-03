@@ -179,6 +179,7 @@ export default class Node extends EventEmitter {
 		newProperty.updateText("default")
     newProperty.on('change', (e) => {
       this.setH(newProperty.getHeight() + 20)
+			diagram.emit('nodeupdate', this);
     })
 		this.properties.push(newProperty)
 		this.propertyGroup.appendChild(newProperty.getEl())
@@ -223,7 +224,11 @@ export default class Node extends EventEmitter {
     for(var key in this.properties) {
       properties[key] = this.properties[key].toJson()
     }
-    return properties
+		return {
+			id: this.getId(),
+			bound: this.bound,
+			properties: properties
+		}
 	}
 	
 }
