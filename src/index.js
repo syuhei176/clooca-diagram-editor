@@ -3,8 +3,8 @@ import { Storage } from './storage'
 const storage = new Storage()
 
 export class clooca {
-  constructor() {
-    var diagramEditor = new DiagramEditor("main");
+  constructor(el) {
+    var diagramEditor = new DiagramEditor(el);
     var toolpallet = diagramEditor.createToolPallet();
     toolpallet.addItem('select', 'selectIcon')
     toolpallet.addItem('rect', 'rectIcon')
