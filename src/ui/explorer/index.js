@@ -4,13 +4,17 @@ import SVGUtil from '../svg-util'
 export default class ExplorerUI extends EventEmitter {
   constructor() {
     super()
+    this.options = {
+      width: 200,
+      offset: 12
+    }
     this.el = SVGUtil.createElement('g', {
       transform: 'translate('+0+','+120+')',
     })
     this.wrapper = SVGUtil.createElement('rect', {
       x: 0,
       y: 0,
-      width: 200,
+      width: this.options.width,
       height: 420,
       stroke: '#000',
       fill: '#fff'
@@ -27,12 +31,13 @@ export default class ExplorerUI extends EventEmitter {
   }
 
   add(diagram) {
+    const { offset } = this.options
     this.list.push(diagram)
     const group = SVGUtil.createElement('g', {})
     const rect = SVGUtil.createElement('rect', {
       x: 0,
       y: 0,
-      width: 160,
+      width: this.options.width - offset * 2,
       height: 40,
       stroke: '#000',
       fill: '#fff'
@@ -44,7 +49,7 @@ export default class ExplorerUI extends EventEmitter {
     text.setTextContent(diagram.name)
     group.appendChild(rect)
     group.appendChild(text)
-    group.transform('translate(' + 20 + ',' + (40 + this.list.length * 40) + ')')
+    group.transform('translate(' + offset + ',' + (offset + (this.list.length - 1) * 40) + ')')
     this.el.appendChild(group)
     rect.click(() => {
       this._select(rect)
