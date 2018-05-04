@@ -3,11 +3,11 @@
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory();
 	else if(typeof define === 'function' && define.amd)
-		define("CloocaDiagramEditor", [], factory);
+		define("Clooca", [], factory);
 	else if(typeof exports === 'object')
-		exports["CloocaDiagramEditor"] = factory();
+		exports["Clooca"] = factory();
 	else
-		root["CloocaDiagramEditor"] = factory();
+		root["Clooca"] = factory();
 })(this, function() {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
@@ -74,7 +74,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 10);
+/******/ 	return __webpack_require__(__webpack_require__.s = 9);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -642,6 +642,10 @@ class Property extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
     return this.gElement;
   }
 
+  toJson() {
+    return this.currentText;
+  }
+
 }
 /* harmony export (immutable) */ __webpack_exports__["a"] = Property;
 
@@ -653,7 +657,7 @@ class Property extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(11);
+var content = __webpack_require__(13);
 if(typeof content === 'string') content = [[module.i, content, '']];
 // Prepare cssTransformation
 var transform;
@@ -661,7 +665,7 @@ var transform;
 var options = {}
 options.transform = transform
 // add the styles to the DOM
-var update = __webpack_require__(13)(content, options);
+var update = __webpack_require__(15)(content, options);
 if(content.locals) module.exports = content.locals;
 // Hot Module Replacement
 if(false) {
@@ -682,8 +686,229 @@ if(false) {
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__node__ = __webpack_require__(9);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__edge__ = __webpack_require__(8);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return DiagramEditor; });
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__diagram_diagram__ = __webpack_require__(6);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_uuid__ = __webpack_require__(23);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_uuid___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1_uuid__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_events__ = __webpack_require__(1);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_events___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_2_events__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__ui_toolpallet__ = __webpack_require__(12);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__ui_explorer__ = __webpack_require__(10);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__ui_selector__ = __webpack_require__(11);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6__ui_svg_util__ = __webpack_require__(0);
+
+
+
+
+
+
+
+
+class DiagramEditor extends __WEBPACK_IMPORTED_MODULE_2_events__["EventEmitter"] {
+  constructor(el) {
+    super();
+    this.wrapper = window.document.getElementById(el);
+    this.el = window.document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    this.browserSize = {
+      width: window.innerWidth || document.body.clientWidth,
+      height: window.innerHeight || document.body.clientHeight
+    };
+    this.el.style.width = this.browserSize.width + 'px';
+    this.el.style.height = this.browserSize.height + 'px';
+    //this.el.setAttributeNS('http://www.w3.org/2000/svg', 'width', 500)
+    //this.el.setAttributeNS('http://www.w3.org/2000/svg', 'height', 500)
+    this.wrapper.appendChild(this.el);
+
+    this.selector = new __WEBPACK_IMPORTED_MODULE_5__ui_selector__["a" /* Selector */]();
+    this.connection_selector = new __WEBPACK_IMPORTED_MODULE_5__ui_selector__["b" /* ConnectionSelector */]();
+    this.addGUILayer();
+    this.loadDiagram({});
+
+    this.selector.on('rubberbundend', e => {
+      const start = this.diagram.getNode(e.startId);
+      if (e.endId) {
+        // ノードに繋げる
+        const end = this.diagram.getNode(e.endId);
+        this.addConnection(start, end, {});
+      } else {
+        // 新しくノードを作成して、繋げる
+        const newNode = this.addNode({
+          bound: {
+            x: e.event.x,
+            y: e.event.y,
+            w: 100,
+            h: 100
+          }
+        });
+        this.addConnection(start, newNode, {});
+      }
+    });
+
+    this.selector.on("changed", node => {
+      this.emit('nodeupdate', node);
+    });
+    this.selector.on("removed", function (node) {
+      this.emit('noderemove', node);
+    });
+    this.connection_selector.on("changed", function (con) {
+      this.emit('conupdate', con);
+    });
+    this.on('click', e => {
+      let toolName = this.toolpallet.getSelectedToolName();
+      let shape = this.toolpallet.getSelectedShape();
+      if (toolName == "select") {} else {
+        this.addNode({
+          bound: {
+            x: e.x,
+            y: e.y,
+            w: 100,
+            h: 100
+          },
+          shape: shape
+        });
+      }
+    });
+  }
+
+  addGUILayer() {
+    const layer = window.document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    const layerClicker = window.document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    layer.setAttributeNS(null, 'transform', 'translate(' + 0 + ',' + 0 + ')');
+    layerClicker.setAttributeNS(null, 'x', 0);
+    layerClicker.setAttributeNS(null, 'y', 0);
+    layerClicker.setAttributeNS(null, 'width', this.browserSize.width);
+    layerClicker.setAttributeNS(null, 'height', this.browserSize.height);
+    layerClicker.setAttributeNS(null, 'stroke', '#000');
+    layerClicker.setAttributeNS(null, 'fill', '#fff');
+    layerClicker.setAttributeNS(null, 'visibility', 'hidden');
+    layerClicker.setAttributeNS(null, 'pointer-events', 'fill');
+    /*
+    base_rect.attr({
+      visibility : "hidden",
+      "pointer-events" : "fill"
+    });
+    */
+
+    layer.appendChild(layerClicker);
+    layerClicker.addEventListener('click', e => {
+      this.emit('click', {
+        x: e.clientX,
+        y: e.clientY
+      });
+      this.selector.clear();
+      this.connection_selector.clear();
+    }, false);
+    this.el.appendChild(layer);
+  }
+
+  addTopGUILayer() {
+    if (this.topGUILayer) this.el.removeChild(this.topGUILayer.getEl());
+    this.topGUILayer = __WEBPACK_IMPORTED_MODULE_6__ui_svg_util__["a" /* default */].createElement('g', {});
+    this.topGUILayer.appendChild(this.selector);
+    this.topGUILayer.appendChild(this.connection_selector);
+    this.el.appendChild(this.topGUILayer.getEl());
+  }
+
+  load(d) {
+    this.loadDiagram(d);
+  }
+
+  loadDiagram(d) {
+    if (this.diagram) {
+      this.diagram.removeSelf(this.el);
+    }
+    this.diagram = new __WEBPACK_IMPORTED_MODULE_0__diagram_diagram__["a" /* default */](this.el);
+    this.addTopGUILayer();
+    this.diagram.on('nodeClicked', e => {
+      this.selector.setTarget(e.node);
+    });
+    this.diagram.on('connClicked', e => {
+      this.connection_selector.setTarget(e.conn);
+    });
+    if (d.data) {
+      d.data.nodes.forEach(n => {
+        const node = this.diagram.addNode(n.id, n.bound, n.options);
+        if (n.properties[0]) node.updateText(n.properties[0]);
+      });
+      d.data.edges.forEach(e => {
+        const conn = this.diagram.addConnection(e.id, this.diagram.getNode(e.start), this.diagram.getNode(e.end));
+        if (e.properties[0]) conn.updateText(e.properties[0]);
+      });
+    } else {
+      d.data = {
+        nodes: [],
+        edges: []
+      };
+    }
+    this.currentDiagramData = d;
+  }
+
+  serializeDiagram() {
+    return this.diagram.toJson();
+  }
+
+  addNode(_options) {
+    var options = _options || {};
+    var id = options.id || __WEBPACK_IMPORTED_MODULE_1_uuid___default()();
+    var bound = options.bound || { x: 0, y: 0, w: 100, h: 40 };
+    var node = this.diagram.addNode(id, bound, options);
+    this.emit('addNode', { node: node });
+    node.on('nodeupdate', node => {
+      this.currentDiagramData.data = this.serializeDiagram();
+    });
+    this.currentDiagramData.data = this.serializeDiagram();
+    return node;
+  }
+
+  addConnection(src, target, _options) {
+    var options = _options || {};
+    var id = options.id || __WEBPACK_IMPORTED_MODULE_1_uuid___default()();
+    this.diagram.addConnection(id, src, target);
+
+    this.currentDiagramData.data = this.serializeDiagram();
+  }
+
+  createToolPallet() {
+    this.toolpallet = new __WEBPACK_IMPORTED_MODULE_3__ui_toolpallet__["a" /* default */]();
+    this.el.appendChild(this.toolpallet.getEl());
+    //this.toolpallet.onSelect()
+    return this.toolpallet;
+  }
+
+  createExplorer() {
+    this.explorer = new __WEBPACK_IMPORTED_MODULE_4__ui_explorer__["a" /* default */]();
+    this.el.appendChild(this.explorer.getEl());
+    return this.explorer;
+  }
+
+}
+
+
+
+/***/ }),
+/* 5 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+class Storage {
+  saveModel(name, modelData) {
+    window.localStorage.setItem('clooca.v3.model.' + name, JSON.stringify(modelData));
+  }
+  loadModel(name) {
+    let stringifiedModelData = window.localStorage.getItem('clooca.v3.model.' + name);
+    return JSON.parse(stringifiedModelData);
+  }
+}
+/* harmony export (immutable) */ __webpack_exports__["a"] = Storage;
+
+
+/***/ }),
+/* 6 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__node__ = __webpack_require__(8);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__edge__ = __webpack_require__(7);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__ui_svg_util__ = __webpack_require__(0);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_events__ = __webpack_require__(1);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_events___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_3_events__);
@@ -700,6 +925,10 @@ class Diagram extends __WEBPACK_IMPORTED_MODULE_3_events__["EventEmitter"] {
     rootElement.appendChild(this.base.getEl());
     this.nodes = {};
     this.connections = {};
+  }
+
+  removeSelf(rootElement) {
+    rootElement.removeChild(this.base.getEl());
   }
 
   getGroup() {
@@ -733,6 +962,7 @@ class Diagram extends __WEBPACK_IMPORTED_MODULE_3_events__["EventEmitter"] {
       this.emit("connClicked", { conn: conn });
     });
     this.connections[id] = conn;
+    return conn;
   }
 
   updateConnection(id, start, end) {
@@ -745,12 +975,648 @@ class Diagram extends __WEBPACK_IMPORTED_MODULE_3_events__["EventEmitter"] {
     return this.nodes[id];
   }
 
+  toJson() {
+    let nodes = Object.keys(this.nodes).map(id => {
+      return this.nodes[id].toJson();
+    });
+    let edges = Object.keys(this.connections).map(id => {
+      const edge = this.connections[id];
+      return edge.toJson();
+    });
+    return {
+      nodes: nodes,
+      edges: edges
+    };
+  }
+
 }
 /* harmony export (immutable) */ __webpack_exports__["a"] = Diagram;
 
 
 /***/ }),
-/* 5 */
+/* 7 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events__ = __webpack_require__(1);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_events__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__ = __webpack_require__(0);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__property__ = __webpack_require__(2);
+
+
+
+
+class Connection extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
+  constructor(id, s, diagram, start, end) {
+    super();
+    this.id = id;
+    this.start = {};
+    this.end = {};
+    this.points = [{}, {}];
+    this.properties = [];
+
+    this.group = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('g');
+    this.propertyGroup = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('g');
+    this.editGroup = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('g');
+
+    this.elem = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('path', {
+      d: "M0 0L0 0",
+      fill: "none",
+      stroke: "#333",
+      strokeWidth: 4
+    });
+
+    this.coll = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createDraggableElement('path', {
+      d: "M0 0L0 0",
+      visibility: "hidden",
+      "pointer-events": "stroke",
+      'stroke-width': 20
+    });
+
+    this.coll.className("node");
+
+    this.group.appendChild(this.elem);
+    this.group.appendChild(this.propertyGroup);
+    this.group.appendChild(this.coll);
+    this.group.appendChild(this.editGroup);
+    diagram.getGroup().appendChild(this.group);
+
+    this.setStartPos(start, end);
+    this.setEndPos(start, end);
+
+    start.addConnection(this);
+    end.addConnection(this);
+    start.on('move', () => {
+      this.setStartPos(start, end);
+      this.setEndPos(start, end);
+      this.refresh();
+    });
+    end.on('move', () => {
+      this.setStartPos(start, end);
+      this.setEndPos(start, end);
+      this.refresh();
+    });
+
+    this.base_start = {};
+    this.base_end = {};
+    /*
+    this.coll.drag((dx, dy, x, y, e) => {
+      this.setStartPos(this.base_start.x + dx, this.base_start.y + dy);
+      this.setEndPos(this.base_end.x + dx, this.base_end.y + dy);
+      this.emit('move', {})
+    }, (x, y) => {
+      this.base_start.x = this.start.x;
+      this.base_start.y = this.start.y;
+      this.base_end.x = this.end.x;
+      this.base_end.y = this.end.y;
+    }, (e) => {
+      //diagram.fireOnConUpdate(this);
+    });
+    */
+    this.coll.click(() => {
+      console.log('click', this);
+
+      this.emit('click', this);
+    });
+
+    this.initProperty();
+
+    this.startNode = start;
+    this.endNode = end;
+  }
+
+  getId() {
+    return this.id;
+  }
+
+  checkRelPos(start, end) {
+
+    let area;
+    if (start.getX() + start.getWidth() < end.getX()) {
+      area = 2;
+    } else if (start.getX() > end.getX() + end.getWidth()) {
+      area = 1;
+    } else {
+      if (start.getY() + start.getHeight() < end.getY()) {
+        area = 4;
+      } else if (start.getY() > end.getY()) {
+        area = 3;
+      } else {
+        area = 3;
+      }
+    }
+    return area;
+  }
+
+  setStartPos(start, end) {
+    let area = this.checkRelPos(start, end);
+    if (area == 1) {
+      this.start.x = start.getX();
+      this.start.y = start.getY() + start.getHeight() / 2;
+    } else if (area == 2) {
+      this.start.x = start.getX() + start.getWidth();
+      this.start.y = start.getY() + start.getHeight() / 2;
+    } else if (area == 3) {
+      this.start.x = start.getX() + start.getWidth() / 2;
+      this.start.y = start.getY();
+    } else if (area == 4) {
+      this.start.x = start.getX() + start.getWidth() / 2;
+      this.start.y = start.getY() + start.getHeight();
+    }
+    this.points[0].x = this.start.x;
+    this.points[0].y = this.start.y;
+    this.refresh();
+  }
+
+  setEndPos(start, end) {
+
+    let area = this.checkRelPos(end, start);
+    if (area == 1) {
+      this.end.x = end.getX();
+      this.end.y = end.getY() + end.getHeight() / 2;
+    } else if (area == 2) {
+      this.end.x = end.getX() + end.getWidth();
+      this.end.y = end.getY() + end.getHeight() / 2;
+    } else if (area == 3) {
+      this.end.x = end.getX() + end.getWidth() / 2;
+      this.end.y = end.getY();
+    } else if (area == 4) {
+      this.end.x = end.getX() + end.getWidth() / 2;
+      this.end.y = end.getY() + end.getHeight();
+    }
+    const length = this.points.length;
+    this.points[length - 1].x = this.end.x;
+    this.points[length - 1].y = this.end.y;
+    this.refresh();
+  }
+
+  getStartPos() {
+    return this.start;
+  }
+
+  getEndPos() {
+    return this.end;
+  }
+
+  refresh() {
+
+    const startPoint = this.points[0];
+    const points = this.points.slice(1);
+    let str = "M" + startPoint.x + ' ' + startPoint.y;
+    points.forEach(p => {
+      str += "L" + p.x + " " + p.y;
+    });
+    this.elem.attr({
+      d: str
+    });
+    this.coll.attr({
+      d: str
+    });
+    const textPoint = this.points.reduce((c, acc) => {
+      return {
+        x: c.x + acc.x,
+        y: c.y + acc.y
+      };
+    }, { x: 0, y: 0 });
+    textPoint.x = textPoint.x / this.points.length;
+    textPoint.y = textPoint.y / this.points.length;
+    this.propertyGroup.transform("translate(" + (textPoint.x - 20) + "," + textPoint.y + ")");
+    this.editGroup.transform("translate(" + (textPoint.x - 20) + "," + textPoint.y + ")");
+  }
+
+  getWidth() {
+    return 100;
+  }
+
+  getHeight() {
+    return 100;
+  }
+
+  initProperty() {
+    const newProperty = new __WEBPACK_IMPORTED_MODULE_2__property__["a" /* default */]({
+      node: this,
+      editGroup: this.editGroup
+    });
+    newProperty.updateText("default");
+    this.property = newProperty;
+    this.properties.push(newProperty);
+    this.propertyGroup.appendChild(newProperty.getEl());
+  }
+
+  updateText(text) {
+    this.properties[0].updateText(text);
+  }
+
+  edit() {
+    console.log("edit");
+    this.property.showTextarea();
+  }
+
+  toJson() {
+    var properties = {};
+    for (var key in this.properties) {
+      properties[key] = this.properties[key].toJson();
+    }
+    return {
+      id: this.getId(),
+      start: this.startNode.getId(),
+      end: this.endNode.getId(),
+      properties: properties
+    };
+  }
+
+}
+/* harmony export (immutable) */ __webpack_exports__["a"] = Connection;
+
+
+/***/ }),
+/* 8 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events__ = __webpack_require__(1);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_events__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__ = __webpack_require__(0);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__property__ = __webpack_require__(2);
+
+
+
+
+class Shape {
+	constructor(options, w, h) {
+		this.options = options || {};
+		this.color = this.options.color || "#fff";
+		if (this.options.svg) {
+			this.el = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('g');
+			this.el.setInnerHTML(this.options.svg);
+		} else {
+			this.el = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('rect', {
+				x: 0,
+				y: 0,
+				width: w,
+				height: h
+			});
+		}
+		this.el.attr({
+			fill: this.color,
+			stroke: "#000",
+			strokeWidth: 1
+		});
+		this._isCustom = !!this.options.svg;
+	}
+
+	isCustom() {
+		return this._isCustom;
+	}
+
+	getEl() {
+		return this.el;
+	}
+
+	setSize(w, h) {
+		if (this.isCustom()) {
+			const ww = w / this.options.width;
+			const hh = h / this.options.height;
+			this.el.transform("scale(" + ww + "," + hh + ")");
+		} else {
+			this.el.attr({
+				width: w,
+				height: h
+			});
+		}
+	}
+}
+
+class Node extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
+
+	constructor(id, diagram, bound, options) {
+		super();
+		var self = this;
+		this.id = id;
+		this.diagram = diagram;
+		this.properties = [];
+		if (typeof bound.w != "number" || bound.w <= 1) bound.w = 2;
+		if (typeof bound.h != "number" || bound.h <= 1) bound.h = 2;
+		this.bound = {
+			x: bound.x,
+			y: bound.y,
+			w: bound.w,
+			h: bound.h
+		};
+		this.color = "#fff";
+		this.options = options || {};
+		this.connections = [];
+		this.elem = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('g');
+		this.shape = new Shape(this.options.shape, bound.w, bound.h);
+		this.propertyGroup = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('g');
+		this.coll = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createDraggableElement('rect', {
+			x: 0,
+			y: 0,
+			width: this.bound.w,
+			height: this.bound.h,
+			'data-cid': this.id,
+			'visibility': 'hidden',
+			'pointer-events': 'fill'
+		});
+		this.editGroup = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('g');
+		this.elem.appendChild(this.shape.getEl());
+		this.elem.appendChild(this.propertyGroup);
+		this.elem.appendChild(this.coll);
+		this.elem.appendChild(this.editGroup);
+
+		diagram.getGroup().appendChild(this.elem);
+		this.start_pos = {
+			x: 0,
+			y: 0
+		};
+		this.coll.drag((dx, dy, x, y, e) => {
+			this.setPos(this.start_pos.x + dx, this.start_pos.y + dy);
+			this.emit('move');
+		}, (x, y) => {
+			this.start_pos.x = this.bound.x;
+			this.start_pos.y = this.bound.y;
+		}, e => {
+			diagram.emit('nodeupdate', this);
+		});
+		this.coll.click(() => {
+			this.emit('click');
+		});
+		this.init();
+	}
+
+	getId() {
+		return this.id;
+	}
+
+	init(onclick) {
+
+		this.elem.className("node");
+		this.refresh();
+
+		this.addProperty();
+	}
+
+	removeSelf() {
+		this.diagram.getGroup().removeChild(this.elem);
+		this.diagram.removeNode(this.id);
+	}
+
+	setPos(x, y) {
+		this.bound.x = x;
+		this.bound.y = y;
+		this.refresh();
+	}
+
+	getBound() {
+		return this.bound;
+	}
+
+	getX() {
+		return this.bound.x;
+	}
+
+	getY() {
+		return this.bound.y;
+	}
+
+	getWidth() {
+		return this.bound.w;
+	}
+
+	getHeight() {
+		return this.bound.h;
+	}
+
+	setSize(w, h) {
+		if (typeof w != "number" || w <= 1) w = 2;
+		if (typeof h != "number" || h <= 1) h = 2;
+		this.bound.w = w;
+		this.bound.h = h;
+		this.refresh();
+	}
+
+	setW(w) {
+		if (typeof w != "number" || w <= 1) w = 2;
+		this.bound.w = w;
+		this.refresh();
+	}
+
+	setH(h) {
+		if (typeof h != "number" || h <= 1) h = 2;
+		this.bound.h = h;
+		this.refresh();
+	}
+
+	addConnection(c) {
+		this.connections.push(c);
+	}
+
+	addProperty() {
+		const newProperty = new __WEBPACK_IMPORTED_MODULE_2__property__["a" /* default */]({
+			node: this,
+			editGroup: this.editGroup
+		});
+		newProperty.updateText("default");
+		newProperty.on('change', e => {
+			this.setH(newProperty.getHeight() + 20);
+			diagram.emit('nodeupdate', this);
+		});
+		this.properties.push(newProperty);
+		this.propertyGroup.appendChild(newProperty.getEl());
+	}
+
+	edit() {
+		this.properties[0].showTextarea();
+	}
+
+	updateText(text) {
+		this.properties[0].updateText(text);
+		if (!this.shape.isCustom()) this.setH(this.properties[0].getHeight() + 20);
+	}
+
+	refresh() {
+		this.elem.transform("translate(" + this.bound.x + "," + this.bound.y + ")");
+		this.shape.setSize(this.bound.w, this.bound.h);
+
+		this.coll.attr({
+			width: this.bound.w,
+			height: this.bound.h
+		});
+		/*
+  if(this.type == "rect" || this.type == "rectangle") {
+  }else if(this.type == "ellipse") {
+  this.shape.attr({
+  cx : this.bound.w/2,
+  cy : this.bound.h/2,
+  rx : this.bound.w/2,
+  ry : this.bound.h/2
+  });
+  }else{
+  }
+  */
+	}
+
+	toJson() {
+		var properties = {};
+		for (var key in this.properties) {
+			properties[key] = this.properties[key].toJson();
+		}
+		return {
+			id: this.getId(),
+			bound: this.bound,
+			properties: properties
+		};
+	}
+
+}
+/* harmony export (immutable) */ __webpack_exports__["a"] = Node;
+
+
+/***/ }),
+/* 9 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__editor_DiagramEditor__ = __webpack_require__(4);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__storage__ = __webpack_require__(5);
+
+
+const storage = new __WEBPACK_IMPORTED_MODULE_1__storage__["a" /* Storage */]();
+
+class clooca {
+  constructor(el) {
+    var diagramEditor = new __WEBPACK_IMPORTED_MODULE_0__editor_DiagramEditor__["a" /* DiagramEditor */](el);
+    var toolpallet = diagramEditor.createToolPallet();
+    toolpallet.addItem('select', 'selectIcon');
+    toolpallet.addItem('rect', 'rectIcon');
+    var explorer = diagramEditor.createExplorer();
+    var diagrams = [{
+      name: "aaa"
+    }, {
+      name: "bbb"
+    }];
+    diagrams.forEach(function (d) {
+      explorer.add(d);
+    });
+    diagramEditor.load(diagrams[0]);
+    explorer.on('select', e => {
+      diagramEditor.load(e.diagram);
+    });
+    diagramEditor.on('addNode', function () {
+      console.log(diagrams);
+    });
+    var node1 = diagramEditor.addNode({
+      bound: {
+        x: 200,
+        y: 100,
+        w: 100,
+        h: 50
+      } });
+    node1.setPos(220, 120);
+    var node2 = diagramEditor.addNode({
+      bound: {
+        x: 400,
+        y: 150,
+        w: 100,
+        h: 50
+      } });
+    diagramEditor.addConnection(node1, node2, {/*options*/});
+    node1.updateText('Book\n-----\n+ title:string');
+    node2.updateText('Order\n-----\n+ id:string');
+  }
+
+}
+/* harmony export (immutable) */ __webpack_exports__["clooca"] = clooca;
+
+
+/***/ }),
+/* 10 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events__ = __webpack_require__(1);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_events__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__svg_util__ = __webpack_require__(0);
+
+
+
+class ExplorerUI extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
+  constructor() {
+    super();
+    this.options = {
+      width: 200,
+      offset: 12
+    };
+    this.el = __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createElement('g', {
+      transform: 'translate(' + 0 + ',' + 120 + ')'
+    });
+    this.wrapper = __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createElement('rect', {
+      x: 0,
+      y: 0,
+      width: this.options.width,
+      height: 420,
+      stroke: '#000',
+      fill: '#fff'
+    }, {
+      'stroke-width': 1
+    });
+    this.el.appendChild(this.wrapper);
+    this.list = [];
+    this.items = [];
+  }
+
+  getEl() {
+    return this.el.getEl();
+  }
+
+  add(diagram) {
+    const { offset } = this.options;
+    this.list.push(diagram);
+    const group = __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createElement('g', {});
+    const rect = __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createElement('rect', {
+      x: 0,
+      y: 0,
+      width: this.options.width - offset * 2,
+      height: 40,
+      stroke: '#000',
+      fill: '#fff'
+    });
+    const text = __WEBPACK_IMPORTED_MODULE_1__svg_util__["a" /* default */].createElement('text', {
+      x: 20,
+      y: 20
+    });
+    text.setTextContent(diagram.name);
+    group.appendChild(rect);
+    group.appendChild(text);
+    group.transform('translate(' + offset + ',' + (offset + (this.list.length - 1) * 40) + ')');
+    this.el.appendChild(group);
+    rect.click(() => {
+      this._select(rect);
+      this.emit("select", { diagram: diagram });
+    });
+    this.items.push(rect);
+  }
+
+  _select(target) {
+    this.items.forEach(item => {
+      item.attr({
+        fill: '#ffffff'
+      });
+    });
+    target.attr({
+      fill: '#e0e0e0'
+    });
+  }
+
+  refresh() {}
+
+}
+/* harmony export (immutable) */ __webpack_exports__["a"] = ExplorerUI;
+
+
+/***/ }),
+/* 11 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -1134,7 +2000,7 @@ class ConnectionSelector extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmit
 
 
 /***/ }),
-/* 6 */
+/* 12 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -1150,7 +2016,7 @@ class ToolPalletUI {
       transform: 'translate(' + 0 + ',' + 0 + ')'
 
     });
-    const rect = __WEBPACK_IMPORTED_MODULE_0__svg_util__["a" /* default */].createElement('rect', {
+    this.wrapper = __WEBPACK_IMPORTED_MODULE_0__svg_util__["a" /* default */].createElement('rect', {
       x: 0,
       y: 0,
       width: 240,
@@ -1160,7 +2026,7 @@ class ToolPalletUI {
     }, {
       'stroke-width': 1
     });
-    this.el.appendChild(rect);
+    this.el.appendChild(this.wrapper);
     this.length = 0;
     this.items = [];
   }
@@ -1169,9 +2035,9 @@ class ToolPalletUI {
     const group = __WEBPACK_IMPORTED_MODULE_0__svg_util__["a" /* default */].createElement('g', {});
     const rect = __WEBPACK_IMPORTED_MODULE_0__svg_util__["a" /* default */].createElement('rect', {
       x: 0,
-      y: 20,
-      width: 40,
-      height: 40,
+      y: 10,
+      width: 60,
+      height: 60,
       fill: '#555',
       opacity: 0.5,
       'stroke-width': 2
@@ -1215,19 +2081,28 @@ class ToolPalletUI {
     })
     text.el.textContent = name
     */
-    group.transform('translate(' + this.items.length * 42 + ',0)');
+    group.transform('translate(' + (this.getWidth() - 64) + ',0)');
+    this.wrapper.setAttr({
+      'width': this.getWidth()
+    });
     //group.appendChild(text)
     this.el.appendChild(group);
     this.selectedToolName = name;
   }
 
+  getWidth() {
+    return this.items.length * 62 + 6;
+  }
+
   _select(target) {
     this.items.forEach(item => {
       item.attr({
+        fill: '#555',
         stroke: '#333'
       });
     });
     target.attr({
+      fill: '#424242',
       stroke: '#55e'
     });
   }
@@ -1248,802 +2123,15 @@ class ToolPalletUI {
 
 
 /***/ }),
-/* 7 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
-//     uuid.js
-//
-//     Copyright (c) 2010-2012 Robert Kieffer
-//     MIT License - http://opensource.org/licenses/mit-license.php
-
-// Unique ID creation requires a high quality random # generator.  We feature
-// detect to determine the best RNG source, normalizing to a function that
-// returns 128-bits of randomness, since that's what's usually required
-var _rng = __webpack_require__(20);
-
-// Maps for number <-> hex string conversion
-var _byteToHex = [];
-var _hexToByte = {};
-for (var i = 0; i < 256; i++) {
-  _byteToHex[i] = (i + 0x100).toString(16).substr(1);
-  _hexToByte[_byteToHex[i]] = i;
-}
-
-// **`parse()` - Parse a UUID into it's component bytes**
-function parse(s, buf, offset) {
-  var i = (buf && offset) || 0, ii = 0;
-
-  buf = buf || [];
-  s.toLowerCase().replace(/[0-9a-f]{2}/g, function(oct) {
-    if (ii < 16) { // Don't overflow!
-      buf[i + ii++] = _hexToByte[oct];
-    }
-  });
-
-  // Zero out remaining bytes if string was short
-  while (ii < 16) {
-    buf[i + ii++] = 0;
-  }
-
-  return buf;
-}
-
-// **`unparse()` - Convert UUID byte array (ala parse()) into a string**
-function unparse(buf, offset) {
-  var i = offset || 0, bth = _byteToHex;
-  return  bth[buf[i++]] + bth[buf[i++]] +
-          bth[buf[i++]] + bth[buf[i++]] + '-' +
-          bth[buf[i++]] + bth[buf[i++]] + '-' +
-          bth[buf[i++]] + bth[buf[i++]] + '-' +
-          bth[buf[i++]] + bth[buf[i++]] + '-' +
-          bth[buf[i++]] + bth[buf[i++]] +
-          bth[buf[i++]] + bth[buf[i++]] +
-          bth[buf[i++]] + bth[buf[i++]];
-}
-
-// **`v1()` - Generate time-based UUID**
-//
-// Inspired by https://github.com/LiosK/UUID.js
-// and http://docs.python.org/library/uuid.html
-
-// random #'s we need to init node and clockseq
-var _seedBytes = _rng();
-
-// Per 4.5, create and 48-bit node id, (47 random bits + multicast bit = 1)
-var _nodeId = [
-  _seedBytes[0] | 0x01,
-  _seedBytes[1], _seedBytes[2], _seedBytes[3], _seedBytes[4], _seedBytes[5]
-];
-
-// Per 4.2.2, randomize (14 bit) clockseq
-var _clockseq = (_seedBytes[6] << 8 | _seedBytes[7]) & 0x3fff;
-
-// Previous uuid creation time
-var _lastMSecs = 0, _lastNSecs = 0;
-
-// See https://github.com/broofa/node-uuid for API details
-function v1(options, buf, offset) {
-  var i = buf && offset || 0;
-  var b = buf || [];
-
-  options = options || {};
-
-  var clockseq = options.clockseq !== undefined ? options.clockseq : _clockseq;
-
-  // UUID timestamps are 100 nano-second units since the Gregorian epoch,
-  // (1582-10-15 00:00).  JSNumbers aren't precise enough for this, so
-  // time is handled internally as 'msecs' (integer milliseconds) and 'nsecs'
-  // (100-nanoseconds offset from msecs) since unix epoch, 1970-01-01 00:00.
-  var msecs = options.msecs !== undefined ? options.msecs : new Date().getTime();
-
-  // Per 4.2.1.2, use count of uuid's generated during the current clock
-  // cycle to simulate higher resolution clock
-  var nsecs = options.nsecs !== undefined ? options.nsecs : _lastNSecs + 1;
-
-  // Time since last uuid creation (in msecs)
-  var dt = (msecs - _lastMSecs) + (nsecs - _lastNSecs)/10000;
-
-  // Per 4.2.1.2, Bump clockseq on clock regression
-  if (dt < 0 && options.clockseq === undefined) {
-    clockseq = clockseq + 1 & 0x3fff;
-  }
-
-  // Reset nsecs if clock regresses (new clockseq) or we've moved onto a new
-  // time interval
-  if ((dt < 0 || msecs > _lastMSecs) && options.nsecs === undefined) {
-    nsecs = 0;
-  }
-
-  // Per 4.2.1.2 Throw error if too many uuids are requested
-  if (nsecs >= 10000) {
-    throw new Error('uuid.v1(): Can\'t create more than 10M uuids/sec');
-  }
-
-  _lastMSecs = msecs;
-  _lastNSecs = nsecs;
-  _clockseq = clockseq;
-
-  // Per 4.1.4 - Convert from unix epoch to Gregorian epoch
-  msecs += 12219292800000;
-
-  // `time_low`
-  var tl = ((msecs & 0xfffffff) * 10000 + nsecs) % 0x100000000;
-  b[i++] = tl >>> 24 & 0xff;
-  b[i++] = tl >>> 16 & 0xff;
-  b[i++] = tl >>> 8 & 0xff;
-  b[i++] = tl & 0xff;
-
-  // `time_mid`
-  var tmh = (msecs / 0x100000000 * 10000) & 0xfffffff;
-  b[i++] = tmh >>> 8 & 0xff;
-  b[i++] = tmh & 0xff;
-
-  // `time_high_and_version`
-  b[i++] = tmh >>> 24 & 0xf | 0x10; // include version
-  b[i++] = tmh >>> 16 & 0xff;
-
-  // `clock_seq_hi_and_reserved` (Per 4.2.2 - include variant)
-  b[i++] = clockseq >>> 8 | 0x80;
-
-  // `clock_seq_low`
-  b[i++] = clockseq & 0xff;
-
-  // `node`
-  var node = options.node || _nodeId;
-  for (var n = 0; n < 6; n++) {
-    b[i + n] = node[n];
-  }
-
-  return buf ? buf : unparse(b);
-}
-
-// **`v4()` - Generate random UUID**
-
-// See https://github.com/broofa/node-uuid for API details
-function v4(options, buf, offset) {
-  // Deprecated - 'format' argument, as supported in v1.2
-  var i = buf && offset || 0;
-
-  if (typeof(options) == 'string') {
-    buf = options == 'binary' ? new Array(16) : null;
-    options = null;
-  }
-  options = options || {};
-
-  var rnds = options.random || (options.rng || _rng)();
-
-  // Per 4.4, set bits for version and `clock_seq_hi_and_reserved`
-  rnds[6] = (rnds[6] & 0x0f) | 0x40;
-  rnds[8] = (rnds[8] & 0x3f) | 0x80;
-
-  // Copy bytes to buffer, if provided
-  if (buf) {
-    for (var ii = 0; ii < 16; ii++) {
-      buf[i + ii] = rnds[ii];
-    }
-  }
-
-  return buf || unparse(rnds);
-}
-
-// Export public API
-var uuid = v4;
-uuid.v1 = v1;
-uuid.v4 = v4;
-uuid.parse = parse;
-uuid.unparse = unparse;
-
-module.exports = uuid;
-
-
-/***/ }),
-/* 8 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events__ = __webpack_require__(1);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_events__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__ = __webpack_require__(0);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__property__ = __webpack_require__(2);
-
-
-
-
-class Connection extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
-  constructor(id, s, diagram, start, end) {
-    super();
-    this.id = id;
-    this.start = {};
-    this.end = {};
-    this.points = [{}, {}];
-
-    this.group = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('g');
-    this.propertyGroup = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('g');
-    this.editGroup = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('g');
-
-    this.elem = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('path', {
-      d: "M0 0L0 0",
-      fill: "none",
-      stroke: "#333",
-      strokeWidth: 4
-    });
-
-    this.coll = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createDraggableElement('path', {
-      d: "M0 0L0 0",
-      visibility: "hidden",
-      "pointer-events": "stroke",
-      'stroke-width': 20
-    });
-
-    this.coll.className("node");
-
-    this.group.appendChild(this.elem);
-    this.group.appendChild(this.propertyGroup);
-    this.group.appendChild(this.coll);
-    this.group.appendChild(this.editGroup);
-    diagram.getGroup().appendChild(this.group);
-
-    this.setStartPos(start, end);
-    this.setEndPos(start, end);
-
-    start.addConnection(this);
-    end.addConnection(this);
-    start.on('move', () => {
-      this.setStartPos(start, end);
-      this.setEndPos(start, end);
-      this.refresh();
-    });
-    end.on('move', () => {
-      this.setStartPos(start, end);
-      this.setEndPos(start, end);
-      this.refresh();
-    });
-
-    this.base_start = {};
-    this.base_end = {};
-    /*
-    this.coll.drag((dx, dy, x, y, e) => {
-      this.setStartPos(this.base_start.x + dx, this.base_start.y + dy);
-      this.setEndPos(this.base_end.x + dx, this.base_end.y + dy);
-      this.emit('move', {})
-    }, (x, y) => {
-      this.base_start.x = this.start.x;
-      this.base_start.y = this.start.y;
-      this.base_end.x = this.end.x;
-      this.base_end.y = this.end.y;
-    }, (e) => {
-      //diagram.fireOnConUpdate(this);
-    });
-    */
-    this.coll.click(() => {
-      console.log('click', this);
-
-      this.emit('click', this);
-    });
-
-    this.initProperty();
-  }
-
-  checkRelPos(start, end) {
-
-    let area;
-    if (start.getX() + start.getWidth() < end.getX()) {
-      area = 2;
-    } else if (start.getX() > end.getX() + end.getWidth()) {
-      area = 1;
-    } else {
-      if (start.getY() + start.getHeight() < end.getY()) {
-        area = 4;
-      } else if (start.getY() > end.getY()) {
-        area = 3;
-      } else {
-        area = 3;
-      }
-    }
-    return area;
-  }
-
-  setStartPos(start, end) {
-    let area = this.checkRelPos(start, end);
-    if (area == 1) {
-      this.start.x = start.getX();
-      this.start.y = start.getY() + start.getHeight() / 2;
-    } else if (area == 2) {
-      this.start.x = start.getX() + start.getWidth();
-      this.start.y = start.getY() + start.getHeight() / 2;
-    } else if (area == 3) {
-      this.start.x = start.getX() + start.getWidth() / 2;
-      this.start.y = start.getY();
-    } else if (area == 4) {
-      this.start.x = start.getX() + start.getWidth() / 2;
-      this.start.y = start.getY() + start.getHeight();
-    }
-    this.points[0].x = this.start.x;
-    this.points[0].y = this.start.y;
-    this.refresh();
-  }
-
-  setEndPos(start, end) {
-
-    let area = this.checkRelPos(end, start);
-    if (area == 1) {
-      this.end.x = end.getX();
-      this.end.y = end.getY() + end.getHeight() / 2;
-    } else if (area == 2) {
-      this.end.x = end.getX() + end.getWidth();
-      this.end.y = end.getY() + end.getHeight() / 2;
-    } else if (area == 3) {
-      this.end.x = end.getX() + end.getWidth() / 2;
-      this.end.y = end.getY();
-    } else if (area == 4) {
-      this.end.x = end.getX() + end.getWidth() / 2;
-      this.end.y = end.getY() + end.getHeight();
-    }
-    const length = this.points.length;
-    this.points[length - 1].x = this.end.x;
-    this.points[length - 1].y = this.end.y;
-    this.refresh();
-  }
-
-  getStartPos() {
-    return this.start;
-  }
-
-  getEndPos() {
-    return this.end;
-  }
-
-  refresh() {
-
-    const startPoint = this.points[0];
-    const points = this.points.slice(1);
-    let str = "M" + startPoint.x + ' ' + startPoint.y;
-    points.forEach(p => {
-      str += "L" + p.x + " " + p.y;
-    });
-    this.elem.attr({
-      d: str
-    });
-    this.coll.attr({
-      d: str
-    });
-    const textPoint = this.points.reduce((c, acc) => {
-      return {
-        x: c.x + acc.x,
-        y: c.y + acc.y
-      };
-    }, { x: 0, y: 0 });
-    textPoint.x = textPoint.x / this.points.length;
-    textPoint.y = textPoint.y / this.points.length;
-    this.propertyGroup.transform("translate(" + (textPoint.x - 20) + "," + textPoint.y + ")");
-    this.editGroup.transform("translate(" + (textPoint.x - 20) + "," + textPoint.y + ")");
-  }
-
-  getWidth() {
-    return 100;
-  }
-
-  getHeight() {
-    return 100;
-  }
-
-  initProperty() {
-    const newProperty = new __WEBPACK_IMPORTED_MODULE_2__property__["a" /* default */]({
-      node: this,
-      editGroup: this.editGroup
-    });
-    newProperty.updateText("default");
-    this.property = newProperty;
-    this.propertyGroup.appendChild(newProperty.getEl());
-  }
-
-  edit() {
-    console.log("edit");
-    this.property.showTextarea();
-  }
-}
-/* harmony export (immutable) */ __webpack_exports__["a"] = Connection;
-
-
-/***/ }),
-/* 9 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events__ = __webpack_require__(1);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_events___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_events__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__ = __webpack_require__(0);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__property__ = __webpack_require__(2);
-
-
-
-
-class Shape {
-	constructor(options, w, h) {
-		this.options = options || {};
-		this.color = this.options.color || "#fff";
-		if (this.options.svg) {
-			this.el = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('g');
-			this.el.setInnerHTML(this.options.svg);
-		} else {
-			this.el = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('rect', {
-				x: 0,
-				y: 0,
-				width: w,
-				height: h
-			});
-		}
-		this.el.attr({
-			fill: this.color,
-			stroke: "#000",
-			strokeWidth: 1
-		});
-		this._isCustom = !!this.options.svg;
-	}
-
-	isCustom() {
-		return this._isCustom;
-	}
-
-	getEl() {
-		return this.el;
-	}
-
-	setSize(w, h) {
-		if (this.isCustom()) {
-			const ww = w / this.options.width;
-			const hh = h / this.options.height;
-			this.el.transform("scale(" + ww + "," + hh + ")");
-		} else {
-			this.el.attr({
-				width: w,
-				height: h
-			});
-		}
-	}
-}
-
-class Node extends __WEBPACK_IMPORTED_MODULE_0_events__["EventEmitter"] {
-
-	constructor(id, diagram, bound, options) {
-		super();
-		var self = this;
-		this.id = id;
-		this.diagram = diagram;
-		this.properties = [];
-		if (typeof bound.w != "number" || bound.w <= 1) bound.w = 2;
-		if (typeof bound.h != "number" || bound.h <= 1) bound.h = 2;
-		this.bound = {
-			x: bound.x,
-			y: bound.y,
-			w: bound.w,
-			h: bound.h
-		};
-		this.color = "#fff";
-		this.options = options || {};
-		this.connections = [];
-		this.elem = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('g');
-		this.shape = new Shape(this.options.shape, bound.w, bound.h);
-		this.propertyGroup = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('g');
-		this.coll = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createDraggableElement('rect', {
-			x: 0,
-			y: 0,
-			width: this.bound.w,
-			height: this.bound.h,
-			'data-cid': this.id,
-			'visibility': 'hidden',
-			'pointer-events': 'fill'
-		});
-		this.editGroup = __WEBPACK_IMPORTED_MODULE_1__ui_svg_util__["a" /* default */].createElement('g');
-		this.elem.appendChild(this.shape.getEl());
-		this.elem.appendChild(this.propertyGroup);
-		this.elem.appendChild(this.coll);
-		this.elem.appendChild(this.editGroup);
-
-		diagram.getGroup().appendChild(this.elem);
-		this.start_pos = {
-			x: 0,
-			y: 0
-		};
-		this.coll.drag((dx, dy, x, y, e) => {
-			this.setPos(this.start_pos.x + dx, this.start_pos.y + dy);
-			this.emit('move');
-		}, (x, y) => {
-			this.start_pos.x = this.bound.x;
-			this.start_pos.y = this.bound.y;
-		}, e => {
-			diagram.emit('nodeupdate', this);
-		});
-		this.coll.click(() => {
-			this.emit('click');
-		});
-		this.init();
-	}
-
-	getId() {
-		return this.id;
-	}
-
-	init(onclick) {
-
-		this.elem.className("node");
-		this.refresh();
-
-		this.addProperty();
-	}
-
-	removeSelf() {
-		this.diagram.getGroup().removeChild(this.elem);
-		this.diagram.removeNode(this.id);
-	}
-
-	setPos(x, y) {
-		this.bound.x = x;
-		this.bound.y = y;
-		this.refresh();
-	}
-
-	getBound() {
-		return this.bound;
-	}
-
-	getX() {
-		return this.bound.x;
-	}
-
-	getY() {
-		return this.bound.y;
-	}
-
-	getWidth() {
-		return this.bound.w;
-	}
-
-	getHeight() {
-		return this.bound.h;
-	}
-
-	setSize(w, h) {
-		if (typeof w != "number" || w <= 1) w = 2;
-		if (typeof h != "number" || h <= 1) h = 2;
-		this.bound.w = w;
-		this.bound.h = h;
-		this.refresh();
-	}
-
-	setW(w) {
-		if (typeof w != "number" || w <= 1) w = 2;
-		this.bound.w = w;
-		this.refresh();
-	}
-
-	setH(h) {
-		if (typeof h != "number" || h <= 1) h = 2;
-		this.bound.h = h;
-		this.refresh();
-	}
-
-	addConnection(c) {
-		this.connections.push(c);
-	}
-
-	addProperty() {
-		const newProperty = new __WEBPACK_IMPORTED_MODULE_2__property__["a" /* default */]({
-			node: this,
-			editGroup: this.editGroup
-		});
-		newProperty.updateText("default");
-		newProperty.on('change', e => {
-			this.setH(newProperty.getHeight() + 20);
-		});
-		this.properties.push(newProperty);
-		this.propertyGroup.appendChild(newProperty.getEl());
-	}
-
-	edit() {
-		this.properties[0].showTextarea();
-	}
-
-	updateText(text) {
-		this.properties[0].updateText(text);
-		if (!this.shape.isCustom()) this.setH(this.properties[0].getHeight() + 20);
-	}
-
-	refresh() {
-		this.elem.transform("translate(" + this.bound.x + "," + this.bound.y + ")");
-		this.shape.setSize(this.bound.w, this.bound.h);
-
-		this.coll.attr({
-			width: this.bound.w,
-			height: this.bound.h
-		});
-		/*
-  if(this.type == "rect" || this.type == "rectangle") {
-  }else if(this.type == "ellipse") {
-  this.shape.attr({
-  cx : this.bound.w/2,
-  cy : this.bound.h/2,
-  rx : this.bound.w/2,
-  ry : this.bound.h/2
-  });
-  }else{
-  }
-  */
-	}
-
-}
-/* harmony export (immutable) */ __webpack_exports__["a"] = Node;
-
-
-/***/ }),
-/* 10 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "DiagramEditor", function() { return DiagramEditor; });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__diagram_diagram__ = __webpack_require__(4);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_uuid__ = __webpack_require__(7);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_uuid___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1_uuid__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_events__ = __webpack_require__(1);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_events___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_2_events__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__ui_toolpallet__ = __webpack_require__(6);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__ui_selector__ = __webpack_require__(5);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__ui_svg_util__ = __webpack_require__(0);
-
-
-
-
-
-
-
-class DiagramEditor extends __WEBPACK_IMPORTED_MODULE_2_events__["EventEmitter"] {
-  constructor(el) {
-    super();
-    this.wrapper = window.document.getElementById(el);
-    this.el = window.document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    this.browserSize = {
-      width: window.innerWidth || document.body.clientWidth,
-      height: window.innerHeight || document.body.clientHeight
-    };
-    this.el.style.width = this.browserSize.width + 'px';
-    this.el.style.height = this.browserSize.height + 'px';
-    //this.el.setAttributeNS('http://www.w3.org/2000/svg', 'width', 500)
-    //this.el.setAttributeNS('http://www.w3.org/2000/svg', 'height', 500)
-    this.wrapper.appendChild(this.el);
-
-    this.selector = new __WEBPACK_IMPORTED_MODULE_4__ui_selector__["a" /* Selector */]();
-    this.connection_selector = new __WEBPACK_IMPORTED_MODULE_4__ui_selector__["b" /* ConnectionSelector */]();
-    this.addGUILayer();
-    this.diagram = new __WEBPACK_IMPORTED_MODULE_0__diagram_diagram__["a" /* default */](this.el);
-    this.addTopGUILayer();
-
-    this.diagram.on('nodeClicked', e => {
-      this.selector.setTarget(e.node);
-    });
-    this.diagram.on('connClicked', e => {
-
-      this.connection_selector.setTarget(e.conn);
-    });
-
-    this.selector.on('rubberbundend', e => {
-      const start = this.diagram.getNode(e.startId);
-      if (e.endId) {
-        const end = this.diagram.getNode(e.endId);
-        this.addConnection(start, end, {});
-      } else {
-        const newNode = this.addNode({
-          bound: {
-            x: e.event.x,
-            y: e.event.y,
-            w: 100,
-            h: 100
-          }
-        });
-        this.addConnection(start, newNode, {});
-      }
-    });
-  }
-
-  addGUILayer() {
-    const layer = window.document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    const layerClicker = window.document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    layer.setAttributeNS(null, 'transform', 'translate(' + 0 + ',' + 0 + ')');
-    layerClicker.setAttributeNS(null, 'x', 0);
-    layerClicker.setAttributeNS(null, 'y', 0);
-    layerClicker.setAttributeNS(null, 'width', this.browserSize.width);
-    layerClicker.setAttributeNS(null, 'height', this.browserSize.height);
-    layerClicker.setAttributeNS(null, 'stroke', '#000');
-    layerClicker.setAttributeNS(null, 'fill', '#fff');
-    layerClicker.setAttributeNS(null, 'visibility', 'hidden');
-    layerClicker.setAttributeNS(null, 'pointer-events', 'fill');
-    /*
-    base_rect.attr({
-      visibility : "hidden",
-      "pointer-events" : "fill"
-    });
-    */
-
-    layer.appendChild(layerClicker);
-    layerClicker.addEventListener('click', e => {
-      console.log(e);
-      this.emit('click', {
-        x: e.clientX,
-        y: e.clientY
-      });
-      this.selector.clear();
-      this.connection_selector.clear();
-    }, false);
-    this.el.appendChild(layer);
-
-    this.selector.on("changed", node => {
-      this.emit('nodeupdate', node);
-    });
-    this.selector.on("removed", function (node) {
-      this.emit('noderemove', node);
-    });
-    this.connection_selector.on("changed", function (con) {
-      this.emit('conupdate', con);
-    });
-    this.on('click', e => {
-      let toolName = this.toolpallet.getSelectedToolName();
-      let shape = this.toolpallet.getSelectedShape();
-      if (toolName == "select") {} else {
-        this.addNode({
-          bound: {
-            x: e.x,
-            y: e.y,
-            w: 100,
-            h: 100
-          },
-          shape: shape
-        });
-      }
-    });
-  }
-
-  addTopGUILayer() {
-    this.topGUILayer = __WEBPACK_IMPORTED_MODULE_5__ui_svg_util__["a" /* default */].createElement('g', {});
-    this.topGUILayer.appendChild(this.selector);
-    this.topGUILayer.appendChild(this.connection_selector);
-    this.el.appendChild(this.topGUILayer.getEl());
-  }
-
-  addNode(_options) {
-    var options = _options || {};
-    var id = options.id || __WEBPACK_IMPORTED_MODULE_1_uuid___default()();
-    var bound = options.bound || { x: 0, y: 0, w: 100, h: 40 };
-    var node = this.diagram.addNode(id, bound, options);
-    this.emit('addNode', { node: node });
-    return node;
-  }
-
-  addConnection(src, target, _options) {
-    var options = _options || {};
-    var id = options.id || __WEBPACK_IMPORTED_MODULE_1_uuid___default()();
-    this.diagram.addConnection(id, src, target);
-  }
-
-  createToolPallet(toolpallet) {
-    this.toolpallet = new __WEBPACK_IMPORTED_MODULE_3__ui_toolpallet__["a" /* default */]();
-    this.el.appendChild(this.toolpallet.getEl());
-    //this.toolpallet.onSelect()
-    return this.toolpallet;
-  }
-}
-
-
-
-/***/ }),
-/* 11 */
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(12)(undefined);
+exports = module.exports = __webpack_require__(14)(undefined);
 // imports
 
 
 // module
-exports.push([module.i, ".dgF-o1ZUTv_AfRTOpLuNd {\n  width: 40;\n  height: 40;\n  background: url(" + __webpack_require__(19) + ");\n}\n\n\n._1VhS5DDjd6dVoTWmKHTcR0 {\n  width: 40;\n  height: 40;\n  background: url(" + __webpack_require__(17) + ");\n}\n\n._1ylgUu5npeNByBmH2B96uT {\n  width: 20;\n  height: 20;\n  background: url(" + __webpack_require__(18) + ");\n}\n\n.LlWczh3uSWmHSxgUIj4-6 {\n  width: 20;\n  height: 20;\n  background: url(" + __webpack_require__(15) + ");\n}\n\n._3ctP2MM1zBAiHNPmrgwHn9 {\n  width: 20;\n  height: 20;\n  background: url(" + __webpack_require__(16) + ");\n}", ""]);
+exports.push([module.i, ".dgF-o1ZUTv_AfRTOpLuNd {\n  width: 40;\n  height: 40;\n  background: url(" + __webpack_require__(21) + ");\n}\n\n\n._1VhS5DDjd6dVoTWmKHTcR0 {\n  width: 40;\n  height: 40;\n  background: url(" + __webpack_require__(19) + ");\n}\n\n._1ylgUu5npeNByBmH2B96uT {\n  width: 20;\n  height: 20;\n  background: url(" + __webpack_require__(20) + ");\n}\n\n.LlWczh3uSWmHSxgUIj4-6 {\n  width: 20;\n  height: 20;\n  background: url(" + __webpack_require__(17) + ");\n}\n\n._3ctP2MM1zBAiHNPmrgwHn9 {\n  width: 20;\n  height: 20;\n  background: url(" + __webpack_require__(18) + ");\n}", ""]);
 
 // exports
 exports.locals = {
@@ -2055,7 +2143,7 @@ exports.locals = {
 };
 
 /***/ }),
-/* 12 */
+/* 14 */
 /***/ (function(module, exports) {
 
 /*
@@ -2137,7 +2225,7 @@ function toComment(sourceMap) {
 
 
 /***/ }),
-/* 13 */
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /*
@@ -2183,7 +2271,7 @@ var singleton = null;
 var	singletonCounter = 0;
 var	stylesInsertedAtTop = [];
 
-var	fixUrls = __webpack_require__(14);
+var	fixUrls = __webpack_require__(16);
 
 module.exports = function(list, options) {
 	if (typeof DEBUG !== "undefined" && DEBUG) {
@@ -2496,7 +2584,7 @@ function updateLink (link, options, obj) {
 
 
 /***/ }),
-/* 14 */
+/* 16 */
 /***/ (function(module, exports) {
 
 
@@ -2591,37 +2679,37 @@ module.exports = function (css) {
 
 
 /***/ }),
-/* 15 */
-/***/ (function(module, exports) {
-
-module.exports = "\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E %3Cg%3E %3Cellipse ry='20' rx='20' id='svg_1' cy='20' cx='20' stroke-width='1.5' stroke='%235fbf00' fill='%237fff00'/%3E %3Cellipse ry='93' id='svg_2' cy='93.75' cx='1.75' stroke-width='1.5' stroke='%23000' fill='%23fff'/%3E %3Cpath stroke='%23ff0000' transform='rotate%2890 21.704938888549805,20.405801773071293%29 ' id='svg_4' d='m11.901005,20l9.803934,-9.780397l9.803934,9.780397l-4.901967,0l0,9.827458l-9.803934,0l0,-9.827458l-4.901967,0z' stroke-opacity='null' stroke-width='0' fill='%23ffffff'/%3E %3C/g%3E %3C/svg%3E\""
-
-/***/ }),
-/* 16 */
-/***/ (function(module, exports) {
-
-module.exports = "\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E %3Cg%3E %3Cellipse ry='20' rx='20' id='svg_1' cy='20' cx='20' stroke-width='1.5' stroke='%23005fbf' fill='%23007fff'/%3E %3Cellipse ry='93' id='svg_2' cy='93.75' cx='1.75' stroke-width='1.5' stroke='%23000' fill='%23fff'/%3E %3Cpath id='svg_5' d='m-213.507947,29.895818l0.742506,-0.740012l0.742506,0.740012l-0.371253,0l0,0.743573l-0.742506,0l0,-0.743573l-0.371253,0z' stroke-opacity='null' stroke-width='0' stroke='%23ff0000' fill='%23ffffff'/%3E %3Cpath stroke='%23ff0000' id='svg_7' d='m28.736926,9.700307l-3.135192,-1.73397c-0.791019,-0.437057 -1.833324,-0.226701 -2.331748,0.469492l-1.235756,1.730734l5.997755,3.314778l1.236731,-1.729931c0.496532,-0.697022 0.259556,-1.615021 -0.53179,-2.051104l0,0zm-17.375722,15.419012l5.998082,3.314744l9.77588,-13.693967l-6.000937,-3.31561l-9.773025,13.694832l0.000001,0.000001zm-0.916206,4.211506l-0.132476,3.113482l3.130383,-1.456968l2.909015,-1.351543l-5.786542,-3.199862l-0.120378,2.894892l0,0l-0.000001,-0.000001z' fill-opacity='null' stroke-opacity='null' stroke-width='0' fill='%23ffffff'/%3E %3C/g%3E %3C/svg%3E\""
-
-/***/ }),
 /* 17 */
 /***/ (function(module, exports) {
 
-module.exports = "\"data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E %3Cg%3E %3Crect id='svg_1' height='48' width='56' y='6' x='2' stroke-width='1.5' stroke='%23000' fill='%23fff'/%3E %3C/g%3E %3C/svg%3E\""
+module.exports = "\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E %3Cg%3E %3Cellipse ry='18' rx='18' id='svg_1' cy='20' cx='20' stroke-width='1.5' stroke='%235fbf00' fill='%237fff00'/%3E %3Cellipse ry='93' id='svg_2' cy='93.75' cx='1.75' stroke-width='1.5' stroke='%23000' fill='%23fff'/%3E %3Cpath stroke='%23ff0000' transform='rotate%2890 21.704938888549805,20.405801773071293%29 ' id='svg_4' d='m11.901005,20l9.803934,-9.780397l9.803934,9.780397l-4.901967,0l0,9.827458l-9.803934,0l0,-9.827458l-4.901967,0z' stroke-opacity='null' stroke-width='0' fill='%23ffffff'/%3E %3C/g%3E %3C/svg%3E\""
 
 /***/ }),
 /* 18 */
 /***/ (function(module, exports) {
 
-module.exports = "\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E %3Cg%3E %3Cellipse ry='20' rx='20' id='svg_1' cy='20' cx='20' stroke-width='1.5' stroke='%23ff0000' fill='%23ff5656'/%3E %3Cellipse ry='93' id='svg_2' cy='93.75' cx='1.75' stroke-width='1.5' stroke='%23000' fill='%23fff'/%3E %3Cpath stroke='%23ff0000' id='svg_3' d='m7.914208,14.126632l5.514531,-6.039724l5.858,6.415853l5.858,-6.415853l5.514582,6.039724l-5.858002,6.415905l5.858002,6.415905l-5.514582,6.039781l-5.858,-6.415907l-5.858,6.415907l-5.514531,-6.039781l5.857952,-6.415905l-5.857952,-6.415905z' stroke-width='0' fill='%23ffffff'/%3E %3C/g%3E %3C/svg%3E\""
+module.exports = "\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E %3Cg%3E %3Cellipse ry='18' rx='18' id='svg_1' cy='20' cx='20' stroke-width='1.5' stroke='%23005fbf' fill='%23007fff'/%3E %3Cellipse ry='93' id='svg_2' cy='93.75' cx='1.75' stroke-width='1.5' stroke='%23000' fill='%23fff'/%3E %3Cpath id='svg_5' d='m-213.507947,29.895818l0.742506,-0.740012l0.742506,0.740012l-0.371253,0l0,0.743573l-0.742506,0l0,-0.743573l-0.371253,0z' stroke-opacity='null' stroke-width='0' stroke='%23ff0000' fill='%23ffffff'/%3E %3Cpath stroke='%23ff0000' id='svg_7' d='m28.736926,9.700307l-3.135192,-1.73397c-0.791019,-0.437057 -1.833324,-0.226701 -2.331748,0.469492l-1.235756,1.730734l5.997755,3.314778l1.236731,-1.729931c0.496532,-0.697022 0.259556,-1.615021 -0.53179,-2.051104l0,0zm-17.375722,15.419012l5.998082,3.314744l9.77588,-13.693967l-6.000937,-3.31561l-9.773025,13.694832l0.000001,0.000001zm-0.916206,4.211506l-0.132476,3.113482l3.130383,-1.456968l2.909015,-1.351543l-5.786542,-3.199862l-0.120378,2.894892l0,0l-0.000001,-0.000001z' fill-opacity='null' stroke-opacity='null' stroke-width='0' fill='%23ffffff'/%3E %3C/g%3E %3C/svg%3E\""
 
 /***/ }),
 /* 19 */
 /***/ (function(module, exports) {
 
-module.exports = "\"data:image/svg+xml,%3Csvg width='40' height='40' viewBox='2 2 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg%3E%3Cpath stroke='%23000' transform='rotate%28-40.575660705566406 32.45265197753906,33.954856872558594%29' id='svg_1' d='m22.055768,33.904453l10.396884,-20.949598l10.396884,20.949598l-5.198442,0l0,21.050403l-10.396883,0l0,-21.050403l-5.198442,0z' stroke-width='1.5' fill='%23fff'/%3E%3C/g%3E%3C/svg%3E\""
+module.exports = "\"data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E %3Cg%3E %3Crect id='svg_1' height='48' width='56' y='6' x='2' stroke-width='1.5' stroke='%23000' fill='%23fff'/%3E %3C/g%3E %3C/svg%3E\""
 
 /***/ }),
 /* 20 */
+/***/ (function(module, exports) {
+
+module.exports = "\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E %3Cg%3E %3Cellipse ry='18' rx='18' id='svg_1' cy='20' cx='20' stroke-width='1.5' stroke='%23ff0000' fill='%23ff5656'/%3E %3Cellipse ry='93' id='svg_2' cy='93.75' cx='1.75' stroke-width='1.5' stroke='%23000' fill='%23fff'/%3E %3Cpath stroke='%23ff0000' id='svg_3' d='m7.914208,14.126632l5.514531,-6.039724l5.858,6.415853l5.858,-6.415853l5.514582,6.039724l-5.858002,6.415905l5.858002,6.415905l-5.514582,6.039781l-5.858,-6.415907l-5.858,6.415907l-5.514531,-6.039781l5.857952,-6.415905l-5.857952,-6.415905z' stroke-width='0' fill='%23ffffff'/%3E %3C/g%3E %3C/svg%3E\""
+
+/***/ }),
+/* 21 */
+/***/ (function(module, exports) {
+
+module.exports = "\"data:image/svg+xml,%3Csvg width='40' height='40' viewBox='2 2 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg%3E%3Cpath stroke='%23000' transform='rotate%28-40.575660705566406 32.45265197753906,33.954856872558594%29' id='svg_1' d='m22.055768,33.904453l10.396884,-20.949598l10.396884,20.949598l-5.198442,0l0,21.050403l-10.396883,0l0,-21.050403l-5.198442,0z' stroke-width='1.5' fill='%23fff'/%3E%3C/g%3E%3C/svg%3E\""
+
+/***/ }),
+/* 22 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global) {
@@ -2657,10 +2745,199 @@ if (!rng) {
 module.exports = rng;
 
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(21)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(24)))
 
 /***/ }),
-/* 21 */
+/* 23 */
+/***/ (function(module, exports, __webpack_require__) {
+
+//     uuid.js
+//
+//     Copyright (c) 2010-2012 Robert Kieffer
+//     MIT License - http://opensource.org/licenses/mit-license.php
+
+// Unique ID creation requires a high quality random # generator.  We feature
+// detect to determine the best RNG source, normalizing to a function that
+// returns 128-bits of randomness, since that's what's usually required
+var _rng = __webpack_require__(22);
+
+// Maps for number <-> hex string conversion
+var _byteToHex = [];
+var _hexToByte = {};
+for (var i = 0; i < 256; i++) {
+  _byteToHex[i] = (i + 0x100).toString(16).substr(1);
+  _hexToByte[_byteToHex[i]] = i;
+}
+
+// **`parse()` - Parse a UUID into it's component bytes**
+function parse(s, buf, offset) {
+  var i = (buf && offset) || 0, ii = 0;
+
+  buf = buf || [];
+  s.toLowerCase().replace(/[0-9a-f]{2}/g, function(oct) {
+    if (ii < 16) { // Don't overflow!
+      buf[i + ii++] = _hexToByte[oct];
+    }
+  });
+
+  // Zero out remaining bytes if string was short
+  while (ii < 16) {
+    buf[i + ii++] = 0;
+  }
+
+  return buf;
+}
+
+// **`unparse()` - Convert UUID byte array (ala parse()) into a string**
+function unparse(buf, offset) {
+  var i = offset || 0, bth = _byteToHex;
+  return  bth[buf[i++]] + bth[buf[i++]] +
+          bth[buf[i++]] + bth[buf[i++]] + '-' +
+          bth[buf[i++]] + bth[buf[i++]] + '-' +
+          bth[buf[i++]] + bth[buf[i++]] + '-' +
+          bth[buf[i++]] + bth[buf[i++]] + '-' +
+          bth[buf[i++]] + bth[buf[i++]] +
+          bth[buf[i++]] + bth[buf[i++]] +
+          bth[buf[i++]] + bth[buf[i++]];
+}
+
+// **`v1()` - Generate time-based UUID**
+//
+// Inspired by https://github.com/LiosK/UUID.js
+// and http://docs.python.org/library/uuid.html
+
+// random #'s we need to init node and clockseq
+var _seedBytes = _rng();
+
+// Per 4.5, create and 48-bit node id, (47 random bits + multicast bit = 1)
+var _nodeId = [
+  _seedBytes[0] | 0x01,
+  _seedBytes[1], _seedBytes[2], _seedBytes[3], _seedBytes[4], _seedBytes[5]
+];
+
+// Per 4.2.2, randomize (14 bit) clockseq
+var _clockseq = (_seedBytes[6] << 8 | _seedBytes[7]) & 0x3fff;
+
+// Previous uuid creation time
+var _lastMSecs = 0, _lastNSecs = 0;
+
+// See https://github.com/broofa/node-uuid for API details
+function v1(options, buf, offset) {
+  var i = buf && offset || 0;
+  var b = buf || [];
+
+  options = options || {};
+
+  var clockseq = options.clockseq !== undefined ? options.clockseq : _clockseq;
+
+  // UUID timestamps are 100 nano-second units since the Gregorian epoch,
+  // (1582-10-15 00:00).  JSNumbers aren't precise enough for this, so
+  // time is handled internally as 'msecs' (integer milliseconds) and 'nsecs'
+  // (100-nanoseconds offset from msecs) since unix epoch, 1970-01-01 00:00.
+  var msecs = options.msecs !== undefined ? options.msecs : new Date().getTime();
+
+  // Per 4.2.1.2, use count of uuid's generated during the current clock
+  // cycle to simulate higher resolution clock
+  var nsecs = options.nsecs !== undefined ? options.nsecs : _lastNSecs + 1;
+
+  // Time since last uuid creation (in msecs)
+  var dt = (msecs - _lastMSecs) + (nsecs - _lastNSecs)/10000;
+
+  // Per 4.2.1.2, Bump clockseq on clock regression
+  if (dt < 0 && options.clockseq === undefined) {
+    clockseq = clockseq + 1 & 0x3fff;
+  }
+
+  // Reset nsecs if clock regresses (new clockseq) or we've moved onto a new
+  // time interval
+  if ((dt < 0 || msecs > _lastMSecs) && options.nsecs === undefined) {
+    nsecs = 0;
+  }
+
+  // Per 4.2.1.2 Throw error if too many uuids are requested
+  if (nsecs >= 10000) {
+    throw new Error('uuid.v1(): Can\'t create more than 10M uuids/sec');
+  }
+
+  _lastMSecs = msecs;
+  _lastNSecs = nsecs;
+  _clockseq = clockseq;
+
+  // Per 4.1.4 - Convert from unix epoch to Gregorian epoch
+  msecs += 12219292800000;
+
+  // `time_low`
+  var tl = ((msecs & 0xfffffff) * 10000 + nsecs) % 0x100000000;
+  b[i++] = tl >>> 24 & 0xff;
+  b[i++] = tl >>> 16 & 0xff;
+  b[i++] = tl >>> 8 & 0xff;
+  b[i++] = tl & 0xff;
+
+  // `time_mid`
+  var tmh = (msecs / 0x100000000 * 10000) & 0xfffffff;
+  b[i++] = tmh >>> 8 & 0xff;
+  b[i++] = tmh & 0xff;
+
+  // `time_high_and_version`
+  b[i++] = tmh >>> 24 & 0xf | 0x10; // include version
+  b[i++] = tmh >>> 16 & 0xff;
+
+  // `clock_seq_hi_and_reserved` (Per 4.2.2 - include variant)
+  b[i++] = clockseq >>> 8 | 0x80;
+
+  // `clock_seq_low`
+  b[i++] = clockseq & 0xff;
+
+  // `node`
+  var node = options.node || _nodeId;
+  for (var n = 0; n < 6; n++) {
+    b[i + n] = node[n];
+  }
+
+  return buf ? buf : unparse(b);
+}
+
+// **`v4()` - Generate random UUID**
+
+// See https://github.com/broofa/node-uuid for API details
+function v4(options, buf, offset) {
+  // Deprecated - 'format' argument, as supported in v1.2
+  var i = buf && offset || 0;
+
+  if (typeof(options) == 'string') {
+    buf = options == 'binary' ? new Array(16) : null;
+    options = null;
+  }
+  options = options || {};
+
+  var rnds = options.random || (options.rng || _rng)();
+
+  // Per 4.4, set bits for version and `clock_seq_hi_and_reserved`
+  rnds[6] = (rnds[6] & 0x0f) | 0x40;
+  rnds[8] = (rnds[8] & 0x3f) | 0x80;
+
+  // Copy bytes to buffer, if provided
+  if (buf) {
+    for (var ii = 0; ii < 16; ii++) {
+      buf[i + ii] = rnds[ii];
+    }
+  }
+
+  return buf || unparse(rnds);
+}
+
+// Export public API
+var uuid = v4;
+uuid.v1 = v1;
+uuid.v4 = v4;
+uuid.parse = parse;
+uuid.unparse = unparse;
+
+module.exports = uuid;
+
+
+/***/ }),
+/* 24 */
 /***/ (function(module, exports) {
 
 var g;
