@@ -158,6 +158,10 @@ class DiagramEditor extends EventEmitter {
       }
     }
     this.currentDiagramData = d;
+    this.diagram.on('nodeupdate', (node) => {
+      console.log('nodeupdate', this.serializeDiagram())
+      this.currentDiagramData.data = this.serializeDiagram()
+    })
   }
 
   serializeDiagram() {
@@ -171,7 +175,7 @@ class DiagramEditor extends EventEmitter {
     var node = this.diagram.addNode(id, bound, options);
     this.emit('addNode', {node:node})
     node.on('nodeupdate', (node) => {
-      this.currentDiagramData.data = this.serializeDiagram()
+      //this.currentDiagramData.data = this.serializeDiagram()
     })
     this.currentDiagramData.data = this.serializeDiagram()
     return node;

@@ -37,6 +37,7 @@ export default class Property extends EventEmitter {
 
   updateText(text) {
     this.currentText = text
+    this.fireChangeEvent()
     this.clearText()
     let lines = text.split("\n")
     let elements = lines.map((line, i) => {
@@ -73,11 +74,10 @@ export default class Property extends EventEmitter {
     
     this.foreignObject.el.appendChild(textArea)
     this.options.editGroup.appendChild(this.foreignObject)
-    textArea.addEventListener('change', ()=>{
+    textArea.addEventListener('change', ()=> {
       this.updateText(textArea.value)
       this.hideTextarea()
       this.textAreaDisplayed = false
-      this.emit('change', this)
     })
     textArea.addEventListener('blur', ()=>{
       this.updateText(textArea.value)
@@ -106,6 +106,11 @@ export default class Property extends EventEmitter {
 
   toJson() {
     return this.currentText
+  }
+
+  fireChangeEvent() {
+    console.log('property.change')
+    this.emit('change', this)
   }
   
 }

@@ -178,8 +178,8 @@ export default class Node extends EventEmitter {
     })
 		newProperty.updateText("default")
     newProperty.on('change', (e) => {
-      this.setH(newProperty.getHeight() + 20)
-			diagram.emit('nodeupdate', this);
+			this.setH(newProperty.getHeight() + 20)
+			this.diagram.emit('nodeupdate', this);
     })
 		this.properties.push(newProperty)
 		this.propertyGroup.appendChild(newProperty.getEl())
